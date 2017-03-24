@@ -1,0 +1,65 @@
+<img class="alignright" alt="binary" src="/wp-content/uploads/2013/11/binary.jpg" width="192" height="144">
+
+Dans le cadre du projet FreeRDS, j'ai eu à créer un petit programme bouchon faisant office 
+de SessionManager pour tester des développements. La communication entre FreeRDS et le SessionManager 
+se fait en protocol buffer, j'ai donc regardé du coté du binding python.
+
+#Protobuf
+
+Rien de magique dans protobuf, il s'agit juste d'une (nième?) manière standardisée de sérializer des données. 
+Je vais faire mon vieux de la vieille mais ça ressemble quand même furieusement à du CORBA sans la partie réseau 
+(ce qui est d'ailleurs un peu embêtant, nous verrons ça plus tard). 
+On décrit des messages dans un fichier <em>.proto</em>, on passe un compilateur dessus qui va générer du code pour 
+lire et écrire les messages. Le truc bien c'est que le compilateur propose plein de langages de sortie.
+
+#En pratique
+
+C'est bien beau de pouvoir écrire des messages mais si vous êtes sur ce blog, vous vous doutez bien 
+que c'est pour transporter des paquets sur le réseau. Voici donc quelques extraits de code python
+<!-- TEASER_END --> 
+(arrangés pour être plus lisibles) pour faire ça:
+
+```python
+import SocketServer
+
+class ReqHandler(SocketServer.BaseRequestHandler):
+    def handle(self):
+        while True:
+            lenBytes = self.request.recv(4)
+            if not len(lenBytes):
+                break            
+            msgLen = struct.unpack("!i", lenBytes)[0]
+
+            msg = self.request.recv(msgLen)
+            baseRpc = pbRPC_pb2.RPCBase()
+            baseRpc.ParseFromString(msg)
+
+            if baseRpc.isResponse:
+                self.treat_response(baseRpc)
+            else:
+                self.treat_request(baseRpc)
+
+class SessionManagerServer(SocketServer.TcpStreamServer):
+   pass
+
+if __name__ == '__main__':     
+   server = SessionManagerServer(('0.0.0.0', 8080), ReqHandler)
+   server.server_forever()
+```
+
+
+Voilà, c'était vraiment difficile. On instancie un <em>TcpStreamServer,</em> à chaque connexion 
+entrante une instance de ReqHandler est créée pour gérer la connexion. Dans ce modèle on n'a qu'une 
+connexion active à la fois, mais il suffit d'hériter de <em>ThreadingTCPServer</em> et on se retrouve
+avec un serveur qui instancie un thread par connexion entrante.
+
+Reste plus qu'à gérer les octets...
+
+
+# Liens
+Les matériaux qui m'ont servi pour travailler ce sujet:
+
+* [protocol buffers](http://fr.wikipedia.org/wiki/Protocol_Buffers) sur wikipedia ;
+* API [python](https://developers.google.com/protocol-buffers/docs/pythontutorial) pour protobuf ;
+* le projet du [sessionManager](https://github.com/hardening/pysession-manager) sur github.
+

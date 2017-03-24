@@ -1,0 +1,73 @@
+<img class='alignright' src='/images/wayland.png'>
+J'ai [posté](http://www.phoronix.com/scan.php?page=news_item&amp;px=MTUzNDM) récemment
+une première version d'un backend FreeRds pour weston, le compositeur de référence de wayland.
+
+Dans cette article, je vais détailler un peu le fonctionnement de ce nouveau compositeur. 
+Ceux qui ont déjà lu mon [article sur le compositeur FreeRdp][article weston+FreeRdp]
+ne seront pas perdu.
+
+
+# FreeRds et weston
+
+<em>FreeRds</em> est un projet en cours, son but est de fournir un serveur RDP en se 
+servant de la librairie <em>FreeRdp</em>. <em>Xrdp</em> était basé sur le code de <em>rdesktop</em>, 
+on peut voir <em>FreeRds</em> est son successeur mais basé sur <em>FreeRdp</em>.
+
+Voilà un schéma simplifié d'architecture de couplage <em>FreeRds</em> / <em>weston</em>, avec <em>weston</em> 
+qui crée le contenu à afficher:
+
+
+<img alt="FreeRDS compositor" src="/wp-content/uploads/2013/12/FreeRDS-compositor-1024x512.png" width="819" height="410">
+
+<!-- TEASER_END --> 
+
+<em>FreeRds</em> et son <em>out-service</em> communiquent en utilisant deux canaux: 
+une socket unix qui sert de canal de commandes, et une mémoire partagée pour le <em>shared framebuffer</em>.
+<em>FreeRds</em> va s'occuper de tout ce qui concerne la gestion du RDP, le "seul" travail de <em>weston</em> 
+sera de gérer le contenu à afficher.
+
+
+
+À l'initialisation, <em>FreeRds</em> va se connecter sur la socket unix créée par <em>weston</em>. Il s'en suit une négociation:
+
+* <em>FreeRds</em> envoie un paquet d'information avec notamment la taille du desktop du client RDP, le type et la disposition du clavier ;
+* <em>weston</em> créé une seat avec le fichier <em>xkb</em> correspondant à la disposition clavier Rdp ;
+* <em>weston</em> créé un segment de mémoire partagée et renvoie l'id à <em>FreeRds</em> par le biais d'un paquet <em>SharedFramebuffer</em> ;
+* <em>FreeRds</em> répond avec un paquet <em>vblank</em> qui indique que le <em>framebuffer</em> est prêt pour utilisation.
+
+
+Quand on a de l'activité des clients weston:
+
+* les clients<em> wayland</em> mettent à jour le contenu de leurs surfaces ;
+* <em>weston</em> construit l'image globale du bureau en composant les différentes surfaces ;
+* <em>weston</em> met à jour la région modifiée dans la mémoire partagée, et envoie un paquet <em>refreshRect</em>. 
+Tant que <em>FreeRds</em> n'a pas répondu avec un paquet <em>vblank</em>, les changements seront accumulés coté 
+<em>weston</em> sans être envoyés à <em>FreeRds</em> ;
+* FreeRds reçoit le paquet <em>refreshRect</em>, il encode la région à rafraîchir en 
+utilisant le codec approprié (données brut, compressées ou non, remoteFx ou Ns codec). 
+Un paquet <em>VBlank</em> est envoyé à Weston.
+
+
+# Futur
+C'est un premier jet, même si le résultat est complètement fonctionnel. Quelques amélioration possibles:
+
+* gérer le paquet <em>SUPPRESS_OUTPUT</em>: le compositeur pourrait se geler pour arrêter d'envoyer des paquets à <em>FreeRds</em> ;
+* gérer les paquets <em>extended keyboard events</em>: ce code n'est pas implémenté ;
+* créer un protocole <em>wayland</em> spécifique qui permettrait aux clients <em>wayland</em> d'interagir 
+avec <em>FreeRds</em>. La partie intéressante est les différents channels RDP: le son, le clipboard, ... Ou bien 
+mon rêve de science-fiction: jouer des vidéos coté client en utilisant le channel TSMF du RDP (décodage et rendu 
+de la vidéo fait coté client). Si quelqu'un est prêt à le financer, je travaille dessus !
+
+
+# Liens
+
+Quelques liens et sources qui ont servi pour cette article:
+
+* le github de [FreeRds](https://github.com/FreeRDS/FreeRDS) ;
+* la homepage de [Wayland](http://wayland.freedesktop.org/) ;
+* mon [article][article weston+FreeRdp] précédent sur le compositeur RDP.
+
+ 
+[article weston+FreeRdp]: /posts/20130928quelques-notes-sur-le-compositeur-rdp-de-weston.html
+
+

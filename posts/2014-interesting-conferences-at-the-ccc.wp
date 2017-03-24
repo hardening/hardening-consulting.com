@@ -1,0 +1,32 @@
+<img class="alignright" alt="ccc" src="/images/ccc.jpg" >
+
+J'ai vu quelques conférences intéressantes du CCC (c'était comme toujours entre noël et le premier de l'an):
+
+* il y a celle cité dans cet [article][X11 security] sur la sécurité de xorg ;
+* j'ai aimé [celle-ci][arm attacks] sur l'exploitation avancée sur processeurs ARM. Le mélange de fils, 
+de montage électronique, de fer à souder et de logiciel était très sympa. La quête 
+du bon affichage via le port Jtag, génial !
+* La [conférence][wii gamepad] sur le hacking de la télécommande de la WII était aussi très rigolo. 
+On y apprend que le protocole d'association entre la télecommande et la box est simplement du WPS 
+avec un renforcement cryptographique avancé rajouté par Nintendo: deux ROT3. Comme disent les 
+intervenants: "come on Nintendo guys". Au final cette télécommande est quand même un super gadget 
+avec plein de capteurs, et des CPUs relativement puissants ;
+* et encore du [hacking][door lock] physique avec un chercheur autrichien qui s'essaye à hacker 
+les nouveaux systèmes de serrures électroniques par RFID. Il fini par ouvrir plus de 90% des
+portes avec un système coûtant une vingtaine d'euros à base de pass de ski modifié. Respect ;
+* il y aussi la [conférence][DAB] qui a fait plein de buzz sur le malware pour les distributeurs
+de billets. Techniquement ça ne casse pas trois pattes à un canard: un pauvre malware avec 
+rien de bien compliqué dedans. Ce qui m'a fait rire, c'est plutôt que les truands avaient 
+cherché à garder le contrôle pour eux des DAB en utilisant un code d'activation qui active
+un menu pirate, plus la réponse à un challenge pour pouvoir vider le DAB. Ils voulaient garder 
+des DAB vaches à lait qu'ils seraient les seuls à pouvoir vider.
+
+
+<span style="text-decoration: underline;">Note:</span> j'alimenterais cet article au gré de mes découvertes intéressantes.
+
+
+[X11 security]: /posts/20140102la-securite-dans-xorg-au-ccc.html "La sécurité dans X11 au CCC"
+[arm attacks]: http://media.ccc.de/browse/congress/2013/30C3_-_5193_-_en_-_saal_1_-_201312281715_-_hardware_attacks_advanced_arm_exploitation_and_android_hacking_-_stephen_a_ridley.html
+[wii gamepad]: http://media.ccc.de/browse/congress/2013/30C3_-_5322_-_en_-_saal_g_-_201312292030_-_reverse_engineering_the_wii_u_gamepad_-_delroth.html
+[door lock]: http://media.ccc.de/browse/congress/2013/30C3_-_5334_-_en_-_saal_2_-_201312291400_-_rfid_treehouse_of_horror_-_adrian_dabrowski.html
+[DAB]: http://media.ccc.de/browse/congress/2013/30C3_-_5476_-_en_-_saal_2_-_201312271600_-_electronic_bank_robberies_-_tw_-_sb.html

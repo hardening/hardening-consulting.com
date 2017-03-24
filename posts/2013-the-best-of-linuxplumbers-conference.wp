@@ -1,0 +1,11 @@
+<img class='alignright' src='/images/conference.jpg' width='150px'>
+
+Cette conférence a lieu chaque année et je trouve que les interventions sont techniquement intéressantes. 
+Les matériaux (slides et sans doute bientôt les vidéos) sont disponibles depuis cette semaine. Parmi toutes 
+ces conférences, celles qui ont particulièrement retenues mon attention:
+
+* Les chiffres de <a href="http://events.linuxfoundation.org/sites/events/files/slides/tmc_sjennings_linuxcon2013.pdf">Linux Transparent Memory Compression</a> sont assez impressionnants: en ajoutant une étape qui compresse la mémoire avant d'envisager de l'envoyer au swap, on pourrait fonctionner sans dégradations importantes à 140% de la mémoire !
+* La conférence <a href="http://events.linuxfoundation.org/sites/events/files/slides/linuxcon2013.pdf"><span class="field-content">Writing Code: Keep It Short, Stupid!</span></a>, on dirait une liste des conseils que j'applique pour le code. Ça fait bizarre de s'entendre dans les slides de quelqu'un d'autre.
+* <a href="http://events.linuxfoundation.org/sites/events/files/slides/Binary_Compatibility_for_library_devs.pdf">Binary compatibility for library developers</a> donne des directives pour assurer une compatibilité binaire d'une librairie (respect de l'ABI). Intéressant et méconnu, même si on peut pressentir les actions qui poseront problèmes.
+
+Le site des tous les slides est <a href="http://events.linuxfoundation.org/events/archive/2013/linuxcon-north-america/program/slides">ici</a>.

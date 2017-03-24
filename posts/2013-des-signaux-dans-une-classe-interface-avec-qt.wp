@@ -1,0 +1,133 @@
+<img class="alignright" alt="qt5" src="/wp-content/uploads/2013/09/qt5.jpg" width="112" height="74">
+
+J'ai été récemment confronté à un problème qui m'a occupé un peu. J'avais une classe 
+abstraite pure qui servait d'interface. Elle devait servir à faire le lien entre une 
+application et l'implémentation qui resterait cachée (et qui évite aussi de linker avec
+ l'implémentation). Jusque là rien de méchant, c'est du <em>C++</em> avec <em>Qt5.</em>
+
+L'implémentation fait des choses et je voulais qu'elle puisse émettre des signaux et
+que le code externe puisse s'abonner aux signaux.
+
+Donc quelque chose dans le genre:
+
+```c++
+// myinterface.h
+
+#include <QObject>
+
+class MyInterface : public QObject {
+   Q_OBJECT
+public:
+   virtual void myfunction() = 0;
+signals:
+    void onSomethingHappened();
+};
+```
+
+```c++
+// myimplementation.cpp
+
+#include <QObject>
+
+class MyImplementation : public MyInterface {
+   Q_OBJECT
+public:
+    virtual void myfunction();
+};
+```
+
+Ce serait bien si ça marchait, mais le <em>moc</em> (Meta Object Compiler) ne veut 
+pas compiler ça et dés qu'on veut faire un <em>connect()</em> sur le signal ça coince.
+<!-- TEASER_END -->
+
+Si on fait hériter de <em>QObject</em> les deux classes, on a un héritage en diamant et 
+le <em>moc</em> ne veut pas de ça non plus (il est dur en négociation ce <em>moc</em>).
+
+
+La seule solution que j'ai trouvé (bien aidé par les forums, faut être honnête) est la suivante:
+
+* l'interface n'hérite de personne, on lui rajoute un méthode virtuelle pure <em>asQObject()</em> 
+qui permet de renvoyer le <em>this</em> de l'implémentation sous forme de <em>QObject</em>. 
+Les signaux sont déclarés dans l'interface mais ne servent que pour la documentation: le moc 
+ne passera pas sur l'objet et cette partie ne générera aucun code ;
+* l'implémentation hérite de <em>QObject</em>, implémente <em>asQObject()</em> et déclare les signaux ;
+* coté appelant quand on veut connecter des signaux sur l'implémentation à travers son interface,
+on fait un <em>connect(interface-&gt;asQObject(), ...)</em>
+
+
+Ce qui donne:
+
+```c++
+#include <QObject>
+
+class MyInterface {
+public:
+   virtual QObject *asQObject() = 0;
+   virtual void myfunction() = 0;
+signals:
+    void onSomethingHappened();
+};
+
+class MyImplementation : public QObject, public MyInterface {
+   Q_OBJECT
+public:
+   virtual QObject *asQObject() { return this; }
+   virtual void myfunction();
+signals:
+    void onSomethingHappened();
+};
+```
+
+<span style="text-decoration: underline;">Attention:</span> il faut absolument que 
+<em>QObject</em> soit le premier dans l'héritage, c'est un requirement du <em>moc</em>.
+
+
+Avec cette mouture ça compile par contre quand on fait les appels sur <em>MyInterface</em>
+par exemple avec le code:
+
+```c++
+MyInterface *interface = (MyInterface *)retrieveImplementation();
+interface->myfunction();
+```
+
+Je n'obtenais pas le comportement attendu, et au moment de l'appel <em>myfunction(),</em> 
+je terminais dans la méthode <em>qt_metacall()</em>. Ça ressemblait vaguement à une vtable moisie, 
+en cherchant sur le web j'ai finalement trouvé la solution, il faut déclarer explicitement 
+<em>MyInterface</em> comme étant une interface pour que le <em>moc</em> s'y retrouve et 
+<em>MyImplementation</em> doit déclarer implémenter l'interface.
+
+
+Ce qui donne la version finale qui marche:
+
+```c++
+#include <QObject>
+
+class MyInterface {
+public:
+   virtual QObject *asQObject() = 0;
+   virtual void myfunction() = 0;
+signals:
+    void onSomethingHappened();
+};
+
+#define MyInterface_iid "com.hardening-consulting.myInterface"
+
+Q_DECLARE_INTERFACE(MyInterface, MyInterface_iid)
+
+class MyImplementation : public QObject, public MyInterface {
+   Q_OBJECT
+   Q_INTERFACES(MyInterface)
+public:
+   virtual QObject *asQObject() { return this; }
+   virtual void myfunction();
+signals:
+    void onSomethingHappened();
+};
+```
+
+Et pour l'appel c'est un peu différent:
+
+```c++
+MyInterface *interface = qobject_cast<MyInterface *>(retrieveImplementation());
+interface->myfunction();
+```

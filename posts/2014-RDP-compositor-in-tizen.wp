@@ -1,0 +1,13 @@
+<img class='alignright' src='/images/wayland.png'>
+J'ai récement appris que le compositeur RDP de weston allait être proposé pour
+compilation dans Tizen par défaut.
+<!-- TEASER_END -->
+
+Le mail posté originellement est [ici][mailing list post]. Ça donne des idées de
+trucs sympas:
+
+* des applications partagées via du RDP ;
+* des aides au développements ; 
+
+
+[mailing list post]: https://lists.tizen.org/pipermail/ivi/2014-April/002167.html

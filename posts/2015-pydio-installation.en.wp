@@ -1,0 +1,44 @@
+I have searched for a software that could do documents or pictures sharing like DropBox or google drive.
+I wanted something OpenSource that I could host too. After tests of  misc products, I have 
+finally choosen [pydio][pydio], formerly Ajaxplorer. Despite the name it's not a python
+application, but a good old dirty PHP application.
+
+Installation has been done on debian wheezy.
+<!-- TEASER_END -->
+
+First we configure the stable repository for Pydio:
+```console
+# echo "deb http://dl.ajaxplorer.info/repos/apt stable main" > /etc/apt/sources.list.d/pydio.list
+# wget -O - http://dl.ajaxplorer.info/repos/charles@ajaxplorer.info.gpg.key | apt-key add -
+# apt-get install update
+```
+
+Then the package installation:
+```console
+# apt-get install pydio php5-sqlite
+```
+
+Some adjustements are needed in the PHP configuration in _/etc/php5/apache2/php.ini_:
+
+* change _upload\_max\_filesize_ and _post\_max\_size_ to a reasonable value for posting files,
+I have choosen 512M;
+* set _output_buffering_ to _off_.
+
+Follows Apache configuration:
+```console
+# cp /usr/share/doc/pydio/apache2.sample.conf /etc/apache2/sites-available/pydio
+# a2ensite pydio
+# a2enmod rewrite
+# a2enmod php5
+# service apache2 restart
+```
+
+Finally you connect your browser to _/pydio_ to do the final steps of the installation.
+I took the most easiest sqlite database option, and Voilà you can share documents or
+photos (publicly or privately). 
+
+Using a [Thunderbird extension][pydio extension] you can even host on Pydio your big
+mail attachments.
+
+[pydio extension]: https://pyd.io/apps/thunderbird-file-link/
+[pydio]: https://pyd.io/

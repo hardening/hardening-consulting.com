@@ -1,0 +1,7 @@
+<img class='alignright' src='/images/security-banner.jpg'>
+I have found that nice [article][gcc canary] about activating stack canaries with 
+GCC to help debugging.
+
+This option is obviously here to enhance security.
+
+[gcc canary]: https://securityblog.redhat.com/2013/10/23/debugging-stack-protector-failures/

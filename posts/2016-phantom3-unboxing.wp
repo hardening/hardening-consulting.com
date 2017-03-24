@@ -1,0 +1,157 @@
+<img class='alignright' src='/images/drone.png' width='100px'>
+Récemment j'ai acheté un drone DJI Phantom 3 (pour des besoins professionnels évidemment :)).
+Il ne s'était pas passé un jour que j'avais pris la main sur la télécommande, sur
+le drone et sur la caméra.<!-- TEASER_END -->
+
+# Déballage
+<img class='alignright' src='/images/dji-phantom-3-standard.jpg' width='400px'> 
+Commençons par les caractéristiques de la bête: il s'agit d'un DJI Phantom 3 standard. Par rapport à la 
+version extended ou pro, cela veut dire que la caméra n'est pas une 4k et que la communication entre le drone et
+la télécommande se fait en Wifi plutôt qu'en lightbridge (un protocole censé être plus
+performant que le Wifi pour ce genre de cas d'usage). Il a la bonne idée de couter moins de 500 euros
+hors taxe, ce qui fait qu'il n'y a pas besoin de l'immobilier dans le capital de l'entreprise (qui a dit
+que c'était fait exprès ?).
+On télécharge l'application sur son mobile, on le connecte sur l'AP créé par la télécommande et l'application donne le retour visuel
+ainsi que le guidage avancé du drone.
+Le pilotage du drone est vraiment facile, on peut dire qu'il fait tout. Le phantom 3 va vite avec son bruit d'essain de guêpes, 
+et les premiers essais de vidéos m'ont bluffé, on se croierait dans un reportage France 3 :)
+
+<br style='clear: both'/>
+
+# Hacks niveau 1
+Après avoir joué un peu avec, je me suis rendu compte de plusieurs choses:
+
+* la portée n'est pas fabuleuse, surtout dans mon coin où il y a beaucoup d'arbres
+et autres obstacles que le Wifi n'aime pas du tout. J'ai fait 300 mètres max, ce qui est
+un peu loin des 500 mètres marketting;
+* mon mobile ramait vraiment et l'application n'est pas raisonnablement utilisable dessus,
+ce qui m'a donné l'idée d'utiliser un PC portable plutôt que le mobile (oui je sais
+je suis oldSchool, et je n'envisage pas le mobile comme support d'une application). Malheureusement 
+je n'ai pas trouvé d'application pour faire ça, plus dans la suite du billet;
+
+## Booste ton antenne !
+<img class='alignright' src='https://rchelimenace.files.wordpress.com/2012/05/img_0381.jpg?w=300&h=224'>
+
+Je ne pouvais que me rendre à l'évidence: le système mètrique marketting n'est pas le
+même que celui que nous utilisons au quotidien. Il semblerait que la correspondance soit
+500 mètres marketting ne font que 300 mètres réels.
+En cherchant sur le net, on trouve rapidement des gens qui se sont lancé dans la modification
+de la télécommande pour améliorer les antennes pour en booster la portée et les rendre 
+plus directionnelles.
+
+On a évidement l'installation d'amplificateur de signal ou d'antennes plus puissantes que celle livrées de base.
+Il n'y a même pas de fer à souder à faire, il s'agit juste de dévisser des connecteurs d'antenne
+wifi. Moi j'ai opté pour une solution encore moins intrusive et ne nécessitant pas d'achat supplémentaire:
+un windsurfer. Non, non il ne s'agit pas de planche à voile, juste d'un bout de carton recouvert de
+papier aluminium à mettre sur l'antenne pour la rendre plus directionnelle. J'ai opté pour
+[ce modèle][windsurfer], à faire soi-même évidement.
+
+Du papier aluminium, un bout de carton, de la colle, une paire de mains opérationnelles. Avant: autour de 300 mètres. 
+Après: environ 700. Un rapport qualité-prix imbattable !
+
+<br style='clear: both'/>
+
+## Booste ton mobile
+Sur ce point pas de magie: mon mobile ne tient pas la charge pour décoder la (grosse) vidéo en H264 et
+la retailler à la taille de l'écran. Ça marchait mieux sur le mobile de ma femme qui est
+plus récent (et à un GPU succeptible de faire le décodage et le scaling en matériel), pas de mystère: il faut du CPU !
+J'ai dû acheter une tablette pour correctement piloter le drone, mais entre temps j'ai quand
+même expérimenté mon idée d'avoir l'application qui tourne sur le PC mobile plutôt que sur
+un mobile.
+
+# Hackons, niveau 2 !
+<img class='alignleft' src='/images/phantom-arch.png' width='400px'>
+L'architecture mise en place par DJI est vraiment intéressante, on a un jeu à 4: la télécommande est un AP wifi,
+et le drone, la caméra et le mobile se connectent sur ce réseau Wifi. On notera au passage un
+point intéressant: la caméra est indépendante du drone, ce qui veut dire que les éventuels traitements
+d'images n'influent pas sur la navigation (point important). Le chiffrement est en WPA2, et
+le SSID par défaut est dérivé de l'adresse mac de la télécommande: ```PHANTOM3_[6 derniers digits de l'adresse MAC]```.
+Le mot de passe par défaut associé, long et fort: ```12341234```. Je pensais que le nom du SSID était vérifié
+pour s'assurer qu'on se connectait bien à un drone DJI (en regardant les derniers digits de
+l'adresse MAC), mais ce ne doit pas être le cas, car on peut changer par configuration le SSID.
+
+Tout ce petit monde reçoit des adresses du serveur DHCP de la télécommande qui distribue
+sur le réseau 192.168.1.0/24. La télécommande est en 192.168.1.1, le drone en 192.168.1.2, la caméra
+en 192.168.1.3 et le mobile souvent en 192.168.1.20.
+
+Une fois connectée, l'application mobile cause à la télécommande, au drone et à la caméra. Je suppose que
+l'application récupère de cette manière les données de télémétrie, niveau de batterie (drone et télécommande) et 
+la force des différents signaux wifi. Le drone est relativement indépendant, donc quand on active les
+modes de navigation intelligents (follow me, course lock et autres), l'application va envoyer
+les points clés du mode et le drone se débrouillera tout seul. On n'est pas dans un cas où
+ce serait le mobile qui ferait un guidage précis en temps réel. 
+
+
+## Vous ne trouvez pas que ça manque de telnet ?
+
+Il se trouve que la caméra est directement accessible en telnet, ainsi qu'en ftp et 
+même en ssh. En cherchant un peu on trouve quelques comptes qui donnent un accès limité
+mais on n'est pas root (je prévois de faire du bon vieux brute force sur le FTP).
+
+Bizarrement sur le drone et la télécommande, on a [accès en root en ftp][telnet], ce qui permet sans mal
+de réactiver le telnet et d'être le chef sur son engin volant. C'est la technique qui est utilisée par certains,
+pour que le wifi émette plus fort que prévu: il suffit de passer les commandes qui vont bien.
+
+## Tu me montres tes paquets...
+
+Et puis voilà, il faut bien faire un peu de wireshark sinon ce n'est pas drôle. On met la carte
+de son PC en mode monitor (quand elle le peux) et on sniffe tout ce qui passe à portée. Quelques conseils
+quand même quand on veut déchiffrer du WPA et qu'on a déjà le mot de passe:
+
+* lire la page de [wireshark][wireshark80211] qui contient déjà beaucoup;
+* éteindre les APs du coin quand on le peux, sinon le fichier de capture devient vite obèse;
+* shooter les applications qui vont faire du réseau, elles sont listées quand on execute airmon-ng
+pour créer l'interface en mode monitor (oui NetworkManager c'est de toi qu'on parle);
+* mettre la carte en mode monitoring sur le bon channel, sinon on loupe une bonne partie
+de la communication. C'est du vécu: je me demandais pourquoi je n'avais jamais tous les paquets du handshake
+WPA et il s'est avéré que la carte écoutait sur le mauvais canal (et avec le jeu des recouvrements des canaux, on capte 
+une partie des paquets, mais pas tous);
+* il faut les 4 paquets du handshake WPA sinon on ne décode rien (à filtrer avec _eapol_ dans
+wireshark);
+* quand on exporte des bouts de la capture dans un fichier plus petit, ne pas oublier ces 4 paquets,
+sinon on se retrouve avec un fichier inutilisable;
+
+Après quelques minutes de capture, on voit comment ça fonctionne: l'application sur le mobile 
+parle à la télécommande, au drone et à la caméra en utilisant différents protocoles. 
+
+Coté télécommande et drone, il s'agit d'un protocole maison dont la structure est assez facile à identifier:
+```
+0x55 [taille du paquet] 0x04 [commande] .... [chksum]  
+```
+Plus difficile de trouver la signification des commandes et de leurs champs. On voit dans certain paquets
+des numéros de séquence, peut-être qu'en simulant le drone, en renvoyant des informations choisies et en regardant l'application
+il serait possible de découvrir la signification des champs... Je n'ai pas découvert de quel type de checksum il s'agit,
+mais ça va venir... Des travaux de reverse engineering avait déjà été fait sur le protocole des phantoms 1 et
+2, il existe aussi des docs sur le protocole du inspire 1. J'imagine que le protocole du phantom 3 doit beaucoup y ressembler.
+
+<u>*Edit*:</u> mes travaux sur le protocol ont bien avancé et cet [article](/posts/20170308-phantom-3-protocole.html) couvre le
+sujet en détails.
+
+Coté caméra, ça se passe avec de l'UDT, un protocole au dessus de UDP. On a le port 9001 qui est accédé pour
+faire un heartbeat, cela permet d'avoir une estimation de la qualité du lien avec la caméra.
+Et le retour visuel est envoyé en h264 directement en UDT à partir du port 9000.
+
+## Retour visuel sur le PC
+
+Comme annoncé au début de l'article, j'ai bricolé un [petit bout de programme][github] qui 
+se connecte sur le port 9000 de la caméra, récupère le H264 dans flux UDT et le sort sur la 
+sortie standard. Une petite invocation à travers mplayer et on a le retour visuel du drone sur le laptop:
+
+```console
+# ./phantom3-video | mplayer -demuxer h264es -framedrop -benchmark -
+```
+
+C'est pas beau la vie !
+
+Si tu as quelques secondes de latence, moi aussi: j'imagine que c'est mplayer qui introduit ça. 
+Il faudrait vérifier en implémentant le décodage avec la librarie qui va bien...
+
+Attention, ça ne marche pas en même temps que l'application mobile, je pense qu'il ne peut y avoir
+qu'un seul client sur la caméra.
+
+La suite au prochain épisode.
+
+[windsurfer]: https://rchelimenace.wordpress.com/how-to-build-your-own-windsurfer-antenna/
+[telnet]: http://www.phantompilots.com/threads/phantom-3-standard-range-mod-lets-do-it-together.80721/
+[wireshark80211]: https://wiki.wireshark.org/HowToDecrypt802.11
+[github]: https://github.com/hardening/Cave/blob/master/phantom3-video.cpp

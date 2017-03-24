@@ -1,0 +1,82 @@
+<img class='alignright' src='/images/wayland.png' width='100px'>
+Un petit article suite à une erreur que j'ai faite en codant [_UWAC_][UWAC] (Using Wayland As Client), 
+ma librairie pour faire du wayland coté client dans l'esprit de la _Xlib_. Les symptômes
+étaient les suivants: une application se servant d'[_UWAC_][UWAC] fonctionnait bien avec le _X11 compositor_
+et freezait avec le _RDP compositor_. Après des tests, il s'est avéré que c'est le _pixman
+renderer_ qui semblait induire ça (en utilisant le _X11 compositor_ et en se servant du
+_pixman renderer_, on avait le même comportement).
+<!-- TEASER_END -->
+
+#Pools, buffers, frames et compagnie...
+
+Avant de rentrer dans l'analyse, un petit rappel de comment ça marche wayland. Si vous êtes 
+complètement novice du sujet, la lecture de cet [article][shared buffer] pourrait vous éclairer.
+
+## Pools et buffers
+ Dans mon cas, il s'agissait d'un rendu en utilisant _wl_shm_, c'est à dire que la communication entre
+le client wayland et le compositor se fait en utilisant une mémoire partagée. 
+
+
+Pour le client ça consiste à:
+
+* créer un segment de mémoire partagée, par exemple en utilisant _mmap_ sur un "fichier
+anonyme";
+* créer un [_wl_shm_pool_][wl_shm_pool] en appelant _wl_shm_create_pool()_ en passant le descripteur de
+fichier et la taille qu'on souhaite utiliser du fichier;
+* une fois le pool créé, on peut allouer des [_wl_buffer_][wl_buffer] dans ce pool en appelant _wl_shm_pool_create_buffer_.
+
+<img class='aligncenter' src='/images/wayland-shm.png' spacing='10px'>
+
+## Surfaces, frames
+
+<img class='alignright' src='/images/wayland frame generation.png' spacing='10px' width="500px">
+
+On dispose de buffers dans lesquels on peut dessiner, les étapes suivantes vont consister à
+attacher le buffer à une surface (_wl_surface_attach_), notifier les zones modifiées (_wl_surface_damage_), 
+et finalement on notifie au compositeur qu'il peut se servir du buffer (_wl_surface_commit_) pour faire une frame.
+
+Théoriquement, quand on a attaché un buffer à une surface et qu'on a demandé
+le rendu d'une frame, on ne peut plus toucher au buffer; quand le compositeur a fini de
+s'en servir pour faire son rendu, il envoit un event _release_, ce qui permet de s'en reservir.
+
+En appelant _wl_surface_frame_, on va pouvoir être prévenu quand la frame a été affichée, on recevra un event
+de type _done_. 
+
+<br style='clear: both;'/>
+
+# Le bug
+Dans [_UWAC_][UWAC], j'avais implémenté un triple buffering, j'avais prévu un buffer courant dans lequel
+dessiner, un buffer qui aurait été déjà envoyé au compositeur. Et enfin, un buffer pour une frame qui aurait été
+créée, mais qui serait en attente d'envoi coté client (en attente du message frame done).
+Donc, j'allouais statiquement à l'initialisation du display 3 _wl_buffer_, et après je
+les faisait tourner.
+
+<img src="/wp-content/uploads/2013/10/triple-buffering.png" style='aligncenter'>
+
+
+Il se trouve que je me servais du message de frame finie (_wl_surface.done_) pour notifier l'utilisateur de la
+librairie [UWAC][UWAC] que la frame avait été dessinée et qu'il pouvait reprogrammer une frame. Par contre,
+ma gestion des buffers était dirigée par la reception du message _wl_buffer.release_: j'attendais que le compositor
+me dise qu'un buffer n'était plus utilisé pour les faire tourner et donc passer à l'image suivante.
+
+C'est là que ce trouvait mon bug: le compositeur peut très bien ne pas envoyer tout de suite
+le message _wl_buffer.release_. Dans le cas de l'utilisation du _pixman renderer_, le buffer
+est conservé jusqu'à ce que le compositor n'en n'ai plus l'usage, et avec ce renderer c'est
+quand on soumet une autre frame frame. En discutant, on m'a cité comme exemple un compositeur
+qui ferait 24 images secondes et garderais 24 wl_buffers.
+
+# Conclusion
+
+J'ai changé mon implémentation, maintenant les wl_buffers sont alloués dynamiquement, et la
+génération des images est bien dirigée par le signal _frame done_. Si le compositeur ne rend
+pas le buffer assez vite, on en alloue un autre. Je m'attendais à avoir une augmentation significative 
+du nombre de buffers et en fait on reste à 3
+
+
+
+Merci à Derek Foreman qui m'a donné la solution à mon bug.
+
+[wl_shm_pool]: http://wayland.freedesktop.org/docs/html/apa.html#protocol-spec-wl_shm_pool
+[wl_buffer]: http://wayland.freedesktop.org/docs/html/apa.html#protocol-spec-wl_buffer
+[UWAC]: https://github.com/hardening/UWAC
+[shared buffer]: /posts/20131007buffers-partages-dans-wayland.html

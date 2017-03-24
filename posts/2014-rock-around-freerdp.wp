@@ -1,0 +1,119 @@
+<img class="alignright" alt="FreeRdp" src="/images/FreeRDP-small.png">
+
+Ces dernières semaines, j'ai travaillé à rendre les écritures sockets non bloquantes
+dans FreeRDP. Ceci m'a permis de faire une petite balade dans les composants bas-niveau de 
+FreeRDP, je vous propose donc un petit carnet de voyage.
+
+# Rendre les écritures non bloquantes
+
+## De quoi s'agit-il ?
+Dans FreeRDP actuellement, les appels en lecture sont bien gérés de manière non-bloquante:
+on s'attend a des résultats _EAGAIN_ ou _EWOULDBLOCK_ lors des lectures / écritures.
+Par contre pour l'écriture, quand on a ce genre de résultats, on rentre dans une boucle qui va attendre
+de manière active que les octets aient bien été envoyés. On est donc bloquant pour l'écriture
+même si la socket est en mode non-bloquant. 
+
+On ne rencontre quasiment jamais ce cas en utilisant le client FreeRDP car la majorité du trafic va du serveur vers le
+client. On imagine difficilement une saturation de la bande passante à coups de frappes
+clavier ou de mouvements de souris. On peut néanmoins voir ça en utilisant des channels:
+par exemple la redirection de disques (en poussant un fichier vers le serveur) ou la
+redirection audio du micro (le micro local exporté sur le serveur).
+
+Par contre quand on est dans FreeRDS, en tant que serveur RDP, c'est un cas que l'on
+rencontre _très_ fréquemment. Il suffit de regarder une vidéo youtube en fullscreen à travers un réseau
+WIFI moyen (le mien pour ne pas le nommer), et on tombe tout de suite dans le cas en question. Et
+ceci malgrés la compression remoteFx.   
+
+<!-- TEASER_END -->
+
+## Non bloqu......
+
+Dans le code FreeRDP, tous les appels qui font des écritures ne se soucient
+pas de savoir si les octets sont bien partis sur le réseau. C'est normal car tout le code
+suppose le mode _pseudo bloquant_ de l'écriture. En introduisant du non-bloquant, il faut qu'on
+traite les parties de FreeRDP qui dépendent du fait que les buffers ont été réellement expédiés.
+Il s'agit pour l'essentiel des périodes de négociation dans lesquelles on attend activement des réponses. 
+
+Dans ma modification j'ai introduis une _buffered BIO_ qui va bufferizer les écritures. Ainsi
+quand une écriture ne va pas être honorée à cause d'une congestion des buffers de sortie, on
+va accumuler les octets et se souvenir que ça a bloqué. La réponse de la BIO sera _"tout est bon
+j'ai tout écrit"_, de cette manière les appelants qui ne se soucient pas du fait
+que les octets soient bien partis ne sont pas troublés. Ensuite, les bouts de code
+intéressés peuvent gérer le flush du buffer de sortie de leur coté. Et ça nous permet aussi de mettre
+en place une surveillance de la disponibilité en écriture: cet aspect est utilisé dans 
+FreeRDS.
+
+
+## Aperçu des modifications
+
+L'ancien code gérait les différents cas de connexion de manières différentes: le RDP, le
+TLS/NLA et TSG étaient plus ou moins gérés de manière indépendante. J'ai
+donc eu l'idée que FreeRDP pourrait envoyer / recevoir ses octets à une chaîne de 
+BIO OpenSSL sans savoir ce qu'il y avait dans la chaîne. Donc faire un type de connexion
+ne revient qu'à générer la chaîne de BIO qui va bien.
+
+Après modifications, voilà à quoi ressemble une chaine de BIO avec de la sécurité RDP (oui je sais, sécurité est en trop) :
+<div style="text-align:center; margin-bottom: 20px;">
+<img class="aligncenter" alt="BIO with RDP security" src='/images/FreeRdp_non_blocking_RDP.png'>
+</div>
+
+
+Pour une connection en TLS c'est relativement identique, sauf qu'on a rajouté une BIO SSL en 
+tête de chaîne: 
+<div style="text-align:center; margin-bottom: 20px;">
+<img class="aligncenter" alt="BIO with TLS security" src='/images/FreeRdp_non_blocking_TLS.png'>
+</div>
+
+Ça paraît simple, le code final est très simple. Mais pour arriver à ça à partir du code
+original, ça a demandé pas mal de boulot !
+
+<u>Note:</u> le comportement standard d'openSSL, c'est de faire les lectures des
+records SSL en lisant 4 octets puis en lisant les nombre d'octets correspondant à la taille
+du record (maximum 4k). J'ai activé l'option _read ahead_ qui permet qu'OpenSSL demande
+à lire directement 0xffff octets et se débrouille des octets qu'il a reçu. Cette petite optimisation
+permet de limiter drastiquement le nombre d'appels système _read()_.
+
+# TSG
+## Terminal Services Gateway
+Et il ne restait plus que TSG (Terminal Services Gateway) à convertir à cette nouvelle sauce...
+Je n'avais qu'une idée assez générale de TSG, quand j'ai mis les mains dans le cambouis
+je n'ai pas été déçu.
+
+Je pense que TSG ça a surtout été une manière de réutiliser les RPC-over-HTTP qui 
+sont présentes avec Outlook-anywhere (MAPI over HTTPS). 
+Au final le protocol est compliqué, plutôt inefficace et
+ça donne vraiment l'impression que le but était de faire rentrer du RDP dans des
+RPC. Je n'ai pas l'impression que ça ai été fait pour faire une gateway RDP avec
+un vrai protocole adapté, mais plutôt dans l'optique de réutiliser un maximum de
+briques existantes, et pouvoir tamponner _"web 2.0 ready"_. Ben évidemment ! Comme c'est
+du HTTPS, c'est sécure et avec du HTTP ça passe partout. Beau discours marketing non ? 
+
+## Sous le capot
+En pratique on a deux connexions: une pour les requêtes envoyés à la gateway et une autre
+pour les octets qu'on va recevoir. Pour l'une on fait un _post HTTP_ avec une taille de body à 
+1 giga. Pour l'autre une requête est envoyé et c'est la réponse qui fait 1 giga. 
+On envoit ou on reçoit les octets au fils de l'eau dans ces requêtes HTTP jamais terminées (enfin
+si quand on a atteint 1 Giga, mais ça donne de la marge).
+
+
+Pour les détails glauques du protocol, vous pouvez aller jeter un coup d'oeil au code source
+qui a de joli dessins en ASCII-art.
+
+
+Après modification la chaîne de BIO ressemble à ça (ici en mode sécurité TLS en transport TSG):
+
+<div style="text-align:center; margin-bottom: 20px;">
+<img class="aligncenter" alt="TSG" src='/images/FreeRdp_non_blocking_TSG.png'>
+</div>
+
+
+
+# Conclusion
+
+Le code méritait sans doute un peu de polish, mais l'essentiel est là.
+
+Je n'en ai pas parlé mais je pense que sur la partie TSG, il y a un thread qui gère les
+RPC. Je pense qu'il pourrait être supprimé et être géré par le thread principal.
+Mais bon j'ai fait assez de TSG pour le moment, j'ai bien mérité une petite pause.
+
+Le code a été intégré dans FreeRDP hier.

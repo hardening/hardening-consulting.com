@@ -1,0 +1,79 @@
+<img class='alignright' src='/images/wayland.png' height='100px'>
+# Wayland / weston
+
+## Compositeur RDP
+Je suis l'auteur et le mainteneur officiel du compositeur RDP dans weston, 
+le compositeur de référence de wayland.
+Ce compositeur headless permet d'avoir un desktop wayland exporté en RDP. Un de mes
+[articles][FreeRDP compositor] couvre ce sujet plus en détails. 
+
+A noter que ce compositeur est utilisé par le fullscreen shell de Jason Ekstrand pour exporter
+le desktop en RDP.
+
+Ce projet a fait un peu de bruit lors de sa sortie (voir la section [Presse][Press]).
+
+
+## Compositeur FreeRDS
+Il s'agit d'un projet proche du compositeur RDP mais cette fois-ci il s'agit de pouvoir
+avoir un desktop weston intégré avec FreeRds. Avec ce backend, on peut demander au
+session manager de FreeRds d'instancier un desktop tournant sous weston. Pour l'instant, celà
+est utile surtout à des fins de tests (tester des applications wayland sans faire tourner
+wayland nativement). Mais au fur et à mesure des avancées de wayland, il va devenir
+intéressant d'avoir un desktop FreeRds sans X11 / Xrds.
+
+Un de mes [articles][FreeRDS compositor] donne plus de détails techniques.
+
+
+<img class='alignright' src='/images/FreeRDP.png' height='100px'>
+# FreeRDP
+
+Je suis un contributeur régulier de FreeRDP, j'ai notament contribué:
+
+* tout un ensemble de corrections de sécurité visant le code gérant les paquets RDP ;
+* une série de patch visant à gérer les corner cases ;
+* des travaux autour de la couche transport de FreeRDP.
+
+
+<img class='alignright' src='/images/rdplogo.jpeg' height='100px'>
+# FreeRDS
+Je fais partie de l'équipe qui a fait FreeRDS. Tant sur la partie serveur lui-même
+que sur les services périphériques. 
+
+
+<img class='alignright' src='/images/qt5.jpg' height='100px'>
+# Autour de Qt
+
+## Qfreerdp
+Il s'agit d'un platform plugin pour Qt permettant d'exporter l'affichage et les entrées
+souris / claviers d'une application Qt5 en RDP. Avec ce plugin, on peut prendre n'importe
+quelle application Qt existante et la rendre disponible en RDP sans qu'aucune recompilation
+soit nécessaire (il faut quand même que l'application n'utilise pas d'OpenGL). 
+
+Le projet est hébergé sur [github][qfreerdp]. Il est disponible sous licence Apache 2 et je 
+sais qu'il est utilisé en interne par des produits commerciaux.
+  
+
+## QFreerds
+Ce projet n'est pas encore publiquement disponible mais il s'agit du pendant de qfreerdp 
+pour FreeRds. Il permet de tranquillement développer une application Qt5 sur son desktop,
+avec tous les outils Qt5 intégrés, et de la rendre disponible via FreeRds.
+
+Le greeter (application qui demande un login / mot de passe) de FreeRDS de cette vidéo utilise ce projet:
+
+https://www.youtube.com/watch?v=hGErMsA8kG4
+
+
+Dans ce projet, on dispose aussi de widgets Qt pour interagir avec FreeRds. On a par exemple
+un widget de changement de résolution utilisable directement dans QtDesigner. Ce widget
+se présente sous la forme d'une combobox avec des résolutions d'écrans. Quand l'utilisateur
+choisit une résolution, le client RDP aura sa résolution changée à la valeur demandée.
+
+D'autre widgets vont être développés au grés des avancées de FreeRds, l'idée est vraiment
+de pouvoir développer une application sur son desktop et de pouvoir la diffuser via
+FreeRDS avec le moins de changements possible. 
+ 
+
+[Press]: /stories/presse.html
+[FreeRDP compositor]: /posts/20130928quelques-notes-sur-le-compositeur-rdp-de-weston.html
+[qfreerdp]: https://github.com/hardening/qfreerdp_platform
+[FreeRDS compositor]: /posts/20131209an-overview-of-the-freerds-backend-of-weston.html

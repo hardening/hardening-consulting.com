@@ -1,0 +1,32 @@
+<img class='alignright' src='/images/conference.jpg' width='150px'>
+
+Après le CCC, voilà la LCA 2015: Linux.conf.au. Cette année ce n'était pas en Australie
+mais en Nouvelle Zélande. Encore de bonnes conférences, parmis celles qui m'ont bien plu: 
+
+* Un [talk][glamor] de Keith Packard sur les progrès de glamor, le serveur X qui fait le
+rendu en se servant de <!-- TEASER_END --> commandes OpenGL. C'est intéressant avec plus de contenu qu'à XDC 2014,
+donc à voir si vous n'avez pas vu l'autre !
+* La [keynote][keynote] avec Linus Torvald et d'autre. C'est en fait une séance questions / réponses, 
+la plupart du temps avec des sujets à long terme. Linus prétend souvent être une personne mauvaise,
+pas la personne auquel s'attende les gens. Néanmoins il a des idées fortes, l'entendre défendre son
+point de vue est toujours intéressant. Je retiendrais les remarques avec systemd sur les minorités bruyantes
+et la majorité silencieuse. De même que la documentation ne fait pas d'un programme complexe
+un programme simple en référence au système de mémoire virtuelle (des relents d'une autre vie ;) );
+* un [talk][debian friends and family] sans prétentions sur l'installation d'une debian pour 
+les amis et/ou la famille. J'aime bien ce genre de talk, très appliqué avec un cas pratique 
+comme illustration. On découvre souvent des outils dont on ignorait l'existance;
+* j'ai bien aimé la [présentation][MST] de David Airlie sur le support des docks et écrans MST 
+(Multi Stream Transport) ;  
+* la [présentation][shaders optimization] sur l'optimisation du compilateur de shaders dans MESA 
+étant intéressante aussi. Tant sur la méthodologie qui est expliquée que sur l'environnement;  
+
+
+Ce ne sont que celles que j'ai le plus aimé, toutes les présentations sont sur le
+[channel youtube][youtube channel] correspondant.
+
+[keynote]: https://www.youtube.com/watch?v=bAop_8l6_cI
+[glamor]: https://www.youtube.com/watch?v=dXR-MVQvQZw
+[debian friends and family]: https://www.youtube.com/watch?v=-Jfk_GtLt0Q
+[MST]: https://www.youtube.com/watch?v=6301tGNs9Dc
+[youtube channel]: https://www.youtube.com/user/linuxconfau2015
+[shaders optimization]: https://www.youtube.com/watch?v=K-5DTAD2Isk

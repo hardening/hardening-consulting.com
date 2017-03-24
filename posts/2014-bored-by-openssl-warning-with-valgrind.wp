@@ -1,0 +1,109 @@
+<img class='alignright' src='/images/valgrind.png'>
+
+# Le problème
+
+OpenSSL a la "bonne" idée de vouloir fabriquer de l'entropie en se servant de la pile
+comme une source de valeurs "au hasard". C'est une entropie toute relative, qui a 
+d'ailleurs donné le bug [debian][debian openssl] de 2008: le mainteneur debian d'openssl
+était agacé des erreurs de variables non-initialisées remontées par valgrind. 
+Il a introduit un correctif enlevant les erreurs valgrind, mais réduisant les nombres
+aléatoires générés à quelques millions ce qui permettait de lister toutes les clés possibles. 
+Une belle conséquence avec tout le matériel cryptographique généré avec cette version 
+d'openSSL à recréer, et sûrement des serveurs qui tourne encore avec des clés facilement
+devinables.
+
+Bon c'est bien beau, le mainteneur debian a fait son méa-culpa, mais on est quand
+même bien embêté par toutes ces erreurs de valgrind quand on a le malheur de faire
+un peu de SSL.  
+<!-- TEASER_END -->
+
+
+# Valgrind
+
+## C'est parce que ce n'est pas initialisé !
+Valgrind propose le mécanisme des suppressions, qui permet d'aider valgrind en lui
+disant "si l'appel a tel callstack et que c'est une variable non-initialisée, ne t'inquiète pas, c'est normal !".
+Et on n'a plus d'erreurs pour les appels concernés.
+
+Le problème c'est que les suppressions concernent des callstacks, et que pour valgrind 
+il reste les données qui sont marquées comme non-initialisées. Et quand on fait des
+calculs dessus, le résultat est lui aussi marqué comme obtenues à partir de données
+non-initialisées: on a une sorte de contamination. On peut avoir l'endroit initial qui
+nous a "contaminé" en utilisant le paramètre _--track-origins=yes_ (<u>note:</u> attention
+quand même ça ralenti bien l'exécution).
+
+En installant les symbols de debugging d'openSSL, on obtient des choses comme 
+ça (par exemple avec FreeRDP faisant du TLS):
+``` text
+==11827== Conditional jump or move depends on uninitialised value(s)
+==11827==    at 0x6ACD2FE: gcc_read_server_network_data (gcc.c:1287)
+==11827==    by 0x6AC9DEE: gcc_read_server_data_blocks (gcc.c:473)
+==11827==    by 0x6AC9697: gcc_read_conference_create_response (gcc.c:275)
+==11827==    by 0x6ACF995: mcs_recv_connect_response (mcs.c:662)
+==11827==    by 0x6B04479: rdp_client_connect_mcs_connect_response (connection.c:632)
+==11827==    by 0x6B0B741: rdp_recv_callback (rdp.c:1127)
+==11827==    by 0x6B11C9B: transport_check_fds (transport.c:1080)
+==11827==    by 0x6B0B8FC: rdp_check_fds (rdp.c:1189)
+==11827==    by 0x6B036D4: rdp_client_connect (connection.c:302)
+==11827==    by 0x6AF0A78: freerdp_connect (freerdp.c:98)
+==11827==    by 0x4E58156: xf_thread (xf_client.c:1451)
+==11827==    by 0x8556181: start_thread (pthread_create.c:312)
+==11827==  Uninitialised value was created by a stack allocation
+==11827==    at 0xBE25DF7: aesni_cbc_encrypt (in /lib/x86_64-linux-gnu/libcrypto.so.1.0.0)
+```
+
+Ça nous fait une belle jambe, on sait maintentant que c'est de la faute de _aesni_cbc_encrypt_. 
+
+## Et qu'est ce qu'on fait maintenant ?
+
+Alors évidement sur les forums on lit partout "_recompile ton openSSL avec -DPURIFY_". Je
+ne sais pas si ceux qui suggèrent ça l'ont déjà fait, mais la compilation d'openSSL
+c'est particulièrement pénible. Et puis il suffit de faire un petit _apt-get source openssl_
+pour voir la quantité de patch que rajoute ubuntu. Donc pour faire des tests dans les
+même conditions que son OS, c'est un peu compliqué.
+
+J'étais sur le point de me résoudre à compiler ma propre libssl ou pire chercher un PPA
+qui l'aurait déjà fait. Quand je me suis souvenu que lors de ma compilation [Pulseaudio][Pulseaudio] 
+de la semaine dernière, il y avait une option qui causait de valgrind. Et en allant voir de plus près j'ai trouvé ce
+qui allait m'aider.
+
+## Là t'as besoin d'aide
+
+J'ai découvert que valgrind fourni une API qui permet au programme qui sont audité
+par lui de l'aider. De lui donner des indications sur ce qui est fait, et notamment
+on peut indiquer que les données sont initialisées, même si de son point de vue, elle ne
+le serait pas. Celà se fait de la manière suivante:
+
+``` c
+#include <valgrind/memcheck.h>
+
+...
+
+int readSSL(....) {
+	...
+	
+	status = SSL_read(tls, data, length);
+	if (status > 0) {
+		...
+		VALGRIND_MAKE_MEM_DEFINED(data, status);
+		...
+	}
+	
+	...
+}
+``` 
+
+Évidement c'est une solution qui marche bien quand on a	disposition le code source
+et qu'on est prêt à l'instrumenter. Mais puisque c'est le cas avec FreeRDP, pourquoi
+se priver !
+
+# Conclusion
+
+J'ai rajouté ça dans FreeRDP dans cette [pull request][PR], je pense que ça va bien nous aider. 
+Et puis vous aurez remarqué que pulseaudio c'est super, puisque la solution à mon
+problème était cachée dans son code source :). 
+
+[debian openssl]: https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2008-0166
+[pulseaudio]: http://www.freedesktop.org/wiki/Software/PulseAudio/
+[PR]: https://github.com/FreeRDP/FreeRDP/pull/1840
+

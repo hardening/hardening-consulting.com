@@ -1,0 +1,104 @@
+<html><body><img class="alignright" alt="wayland" src="/wp-content/uploads/2013/09/wayland.png" width="57" height="74">
+This post covers the RDP compositor in <em>weston</em>, the reference compositor for <em>wayland</em>.
+
+<h1>About wayland / weston</h1>
+
+This chapter does not pretend to cover all the differences between <em>X11</em> and <em>wayland</em>, it just tries to give the big details.
+
+
+
+The goal of wayland is to replace X11, it is like the core of X11: an IPC (Inter Process Communication) mecanism between graphical applications.
+
+
+
+Taken from the wayland documentation, here's the workflow when an X11 application wants to notify a graphical change:
+
+
+
+<a href="http://wayland.freedesktop.org/x-architecture.png"><img alt="Architecture avec X11 " src="http://wayland.freedesktop.org/x-architecture.png" width="533" height="507"></a>
+
+
+
+You can see that you have plenty of communications and roundtrips until the modified bits reach the hardware.
+
+
+
+ 
+
+
+
+With wayland, it goes much faster:
+
+
+
+<a href="http://wayland.freedesktop.org/wayland-architecture.png"><img alt="" src="http://wayland.freedesktop.org/wayland-architecture.png" width="319" height="500"></a>
+
+
+
+ 
+
+
+
+The philosophy of wayland is "every frame is perfect", the compositor will only send a finalized frame to the hardware. Forgot about tearing, flashes and graphical artifacts you can see under X11 when fastly moving a window.
+
+<h1>The RDP backend</h1>
+
+The weston project aims to be a reference compositor for wayland. The code should be clear and functional, and give enough material for people that want to implement their own compositor. The project implement a reference shell for a desktop (desktop-shell) and already have some backends for:
+
+<ul>
+	<li>DRM / KMS: to drive these API for video;</li>
+	<li>udev: to access to input devices (mouse and keyboard);</li>
+	<li>fbdev: the good old framebuffer;</li>
+	<li>rpi: a backend to use that particular hardware.</li>
+</ul>
+
+In weston a backend implements access to <em>seats</em> (mouse, keyboard, ...) or output devices (GPU most of the time). The RDP compositor is based on the FreeRDP project to provide the RDP transport. This backend is headless, it uses a memory buffer as a video card and wires a seat per connected RDP peer. It uses the <em>pixman renderer</em> that will use the surfaces sent by wayland clients and will compose the desktop's picture. That means that even before we have any connected RDP client, the full picture is already computed.
+
+
+
+<a href="/wp-content/uploads/2013/09/RDP-compositor.png"><img alt="RDP compositor" src="/wp-content/uploads/2013/09/RDP-compositor-1024x577.png" width="858" height="484"></a>
+
+
+
+The backend listens for incoming RDP connections, and instantiates a seat (mouse and keyboard) for each incoming peer. Each connected peer has its own pointer and focus (having 2 pointers is really funny).
+
+
+
+When a wayland client as some activity, it notifies the compositor that will rebuild the desktop picture. It takes all the list of surfaces in z-index order and compose until the full screen has been painted (or when there's no more surfaces). The touched part of the screen are sent to the RDP peers, they're encoded either in raw format or using the NS or remoteFx codecs depending of the client capabilities. The compositor also handle the <em>SUPPRESS_OUTPUT</em> message sent by RDP clients when they don't want screen updates (this is the case when the window of a RDP client is iconified).
+
+<h1>L<b>imitations and future</b></h1>
+
+<h2>Client-side pointer</h2>
+
+Theoretically with RDP you can have client-side pointer support, but adding in weston is not that easy:
+
+<ul>
+	<li>for weston the mouse pointer surface is anonymous, so when rendering the full scene we should draw everything but this surface. Moreover with the multi-seat support we should maintain an image per seat, and draw everything but the surface of the current seat.</li>
+	<li>RDP cursors can only be bitmaps or bitmasks so to support client-side pointer, we should scan the surface to check that it matches that requirement.</li>
+</ul>
+
+For now we disable the client-side pointer completely, so when moving the mouse, weston does refreshes by sending pixmap updates.
+
+<h2>The future</h2>
+
+Some ideas for the RDP compositors:
+
+<ul>
+	<li>map the RDP clipboard channel in wayland, to have copy'n paste between a RDP peer and the wayland applications;</li>
+	<li>RDP8 has introduced mode switches initiated by the RDP client, everything is ready for that in weston and in the development branch of FreeRDP;</li>
+	<li>implement a frame synchronization mecanism, as in the current code, weston sends as many frames as it can even if the network or the destination peer can't handle them;</li>
+	<li>create a wayland extension of the protocol to access to RDP channels. I'm dreaming of a modified VLC that would use the TSMF channel (multimedia extension) and would play videos with the video decoding being done on the RDP client side.</li>
+</ul>
+
+<h1>Links</h1>
+
+Here's some good links on the subject:
+
+<ul>
+	<li>this <a href="http://www.youtube.com/watch?v=RIctzAQOe44">conference</a> by Daniel Stone is a good (and funny) introduction on wayland;</li>
+	<li>the official <a href="http://wayland.freedesktop.org/architecture.html" target="_blank">documentation</a> of wayland;</li>
+	<li>source <a href="http://cgit.freedesktop.org/wayland/weston/tree/src/compositor-rdp.c" target="_blank">code</a> for the RDP compositor (code is the best documentation isn't it ?);</li>
+	<li>official site for <a href="https://github.com/FreeRDP/FreeRDP/wiki" target="_blank">FreeRDP</a></li>
+</ul>
+
+ </body></html>

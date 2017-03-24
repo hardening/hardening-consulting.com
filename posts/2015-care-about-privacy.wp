@@ -1,0 +1,76 @@
+<img class='alignright' src='/images/security-banner.jpg'>
+Avec les récents projets de loi sur le fichage généralisé^W^W renseignement, j'ai pas
+mal lu sur la protection de la vie privée. C'est facile de crier avec les loups, de
+s'indigner, mais quoi faire en pratique ?
+
+Évidement, il y a l'évangélisation. Parler des dangers de l'utilisation des Facebooks and co
+pour la vie privée: à l'occasion d'un repas de famille, entre collègues à la pause café, 
+avec les potes de loisirs. Pour l'avoir fait un peu ces derniers temps, c'est fou comme les Google
+et compagnie ont super bien travaillé: une majorité de personnes a intégré que la
+vie privée "on n'a rien à cacher quand on n'a rien à se reprocher". Serait-on déjà
+dans une société de surveillance généralisée ? 
+
+On peut appeler les députés pour leur demander leur avis sur la nouvelle loi
+sur le renseignement, et tenter de les convaincre que c'est une atteinte à la vie
+privée. Il faut juste passer outre le dédain: est-ce bien normal que l'assistant
+parlementaire dise "ne vous inquiétez pas c'est bien moins dangereux que ce que vous
+avez entendu", sans aucun autre argument (ai confiance, crois en moi...). 
+C'est un bon exercice si vous n'êtes pas encore convaincu que ceux qui votent les lois 
+ont une inculture totale du numérique, et ne comprennent aucun des enjeux qui s'y
+rapportent.
+
+<!-- TEASER_END -->
+
+<img class='alignright' src='/images/ghostery.png'>
+On peut aussi s'installer des plugins qui permettent de désactiver les mouchards et qui
+révèlent le fichage généralisé sur la plupart des sites web. J'ai
+installé le plugin [Ghostery][ghostery], et c'est incroyable de voir que la quasi totalité
+des sites web ont un mouchard _Google Analystics_.
+
+Il se trouve que moi aussi pour ce site, j'utilisais _Google Analystics_. J'avais vraiment
+fait ça par facilité, je dirais plutôt par flemme. C'est vrai que les tableaux
+de _Google Analystics_ sont tape à l'oeil. Néanmoins en regardant de plus
+près, avec un background sécurité, on peut vraiment s'interroger sur la pertinence des informations affichée. 
+Ça convainc sans doute les marketteux mais faire des stats basées sur les bannières
+navigateurs c'est quand même bien vaseux.
+
+<img class='alignright' src='/images/piwik-logo.png'>
+J'ai donc décidé de mettre à la poubelle _Google Analystics_ et de gérer moi-même
+mes données de connexions. _Google_ n'a pas besoin d'être au courant de la fréquentation
+de mon site, aussi faible soit elle. Je lui ai donc trouvé un petit remplaçant dans
+le logiciel [Piwik][piwik] (il s'agit du grand frère de _phpMyVisite_ pour ceux
+qui l'ont connu). Ça s'installe en quelques minutes et ça se configure aussi
+facilement que _Google Analystics_:
+
+* les données sont chez moi, je ne les partage pas, je ne les utilise pas pour
+faire de la publicité ciblée, ça ne sert qu'à voir la fréquentation de ce site;
+* j'ai configuré _Piwik_ pour qu'il respecte le flag "Do Not Track" des navigateurs. 
+D'ailleurs ça m'a joué des tours quand je testais, car je ne voyais pas mes visites;
+* _Piwik_ permet aussi de se mettre en conformité avec la législation allemande qui
+demande que les IPs ne soient pas stockées entièrement (dernier digit annonymisé)
+
+Il me reste à gérer la question des commentaires de posts: soit je reste sur
+_Google +_ en m'arrangeant pour que le fichage _Google_ n'intervienne que quand on
+lit les commentaires et on commente (ce qui paraîtrait logique). Je pourrais aussi
+proxifier cette requête: ce serait mon site qui ferait la requête à _Google_ et pas le 
+navigateur du visiteur (et donc le fichage serait supprimé). Ou bien je trouve 
+un bout de logiciel qui permette de traiter les commentaires en ayant les données chez moi.
+
+
+Pour finir, quelques matériaux sur la vie privée:
+
+* un [article][Télérama] très vulgarisé de _Télérama_;
+* le site de la [quadrature du net][quadrature]. N'ayant pas le temps de faire
+du lobbying pour les questions de vie privée, j'ai trouvé que faire un don à la
+quadrature était un bon moyen de quand même faire quelque chose (et en plus ils
+ont vraiment du talent pour défendre ces questions là);
+* cette [vidéo][youtube] (durée 1h43), parmi tant d'autres, de [Benjamin Bayart][bayart] qui parle d'internet
+et de politique. 
+ 
+  
+[ghostery]: https://addons.mozilla.org/fr/firefox/addon/ghostery/
+[Piwik]: https://fr.piwik.org/
+[Télérama]: http://www.telerama.fr/medias/que-reste-t-il-de-notre-vie-privee-sur-internet,108649.php 
+[quadrature]: https://www.laquadrature.net/
+[youtube]: https://www.youtube.com/watch?v=Pn_u1u6gWPg
+[bayart]: http://fr.wikipedia.org/wiki/Benjamin_Bayart

@@ -1,0 +1,68 @@
+<html><body><img class=" wp-image-286 alignright" alt="rdc-icon" src="/wp-content/uploads/2014/01/rdc-icon.png" width="99" height="99">J'ai eu l'occasion de faire quelques corrections sur le code qui gère l'encodage remoteFx dans FreeRDP, j'en profite donc pour faire un petit article sur ce sujet.
+<h1>Historique</h1>
+
+RemoteFx est un codec pour encoder les images bitmap dans RDP. Il y a quelques années, on essayait à tout prix de rajouter des opérations vectorielles dans le protocole RDP: dessiner un rectangle avec une couleur, bouger un bout de l'écran d'une position à une autre, faire des opérations compliquées de bitmap... On se rend compte que Microsoft essayait de transposer ce qui est faisable avec GDI dans le protocole RDP, ce qui donne des opérations vectorielles assez subtiles. Par exemple les opérations de type <em>ninegrid</em> sont vraiment compliquées (lire incompréhensibles).
+
+
+
+Au final, le résultat n'est pas si satisfaisant que cela:
+
+<ul>
+	<li>les clients RDP deviennent très compliqués car ils doivent gérer plein d'opérations vectorielles pour avoir de bonnes performances. Les clients RDP legacy (les terminaux légers pas facilement mettable à jour) restent avec leurs capacités à la sortie d'usine;</li>
+	<li>le serveur aussi devient compliqué car il doit s'adapter aux clients et donc avoir des conditionnelles un peu partout dans le code pour faire un rendu avec des commandes supportées;</li>
+	<li>le monde graphique a bien changé et le temps des rendus vectoriel est révolu, quasiment tous les toolkits graphiques maintiennent le contenu à afficher et envoient sous forme d'un gros bitmap le résultat. On perd donc complètement la notion de commandes vectorielles.</li>
+</ul>
+
+L'accent a donc été mis sur la recherche de codecs permettant d'avoir une optimisation de la bande passante sans rajouter d'opération vectorielles compliquées. En procédant de la sorte:
+
+<ul>
+	<li>les clients deviennent plus faciles à coder, ils peuvent ne supporter que quelques codecs;</li>
+	<li>les encodeurs / décodeurs de protocole peuvent être fondus dans le silicium pour avoir de meilleures performances. Par exemple le codec h264: de plus en plus de machines disposent d'un encodeur / décodeur matériel h264 (même mon téléphone portable en a même un);</li>
+	<li>le serveur peut faire des heuristiques sur le codec à utiliser pour différentes parties de l'écran;</li>
+	<li>en ayant des encodages avec pertes, on va améliorer le volume de données</li>
+</ul>
+
+<h1>RemoteFX</h1>
+
+Je ne vais pas rentrer dans les détails de technique de compression remoteFX car je ne suis pas compétent dans le domaine. 
+<!-- TEASER_END -->
+
+
+
+
+Pour ce que j'en sais, on va faire une projection du RGB vers un autre espace de couleurs, on va séparer les différentes composantes de couleurs des pixels et on va compresser ces flux de couleurs (planes). Si on était en RGB, cela correspondrait à compresser les octets de rouge, vert et de bleu chacun de leurs cotés.
+
+<p style="text-align: center;"><a href="/wp-content/uploads/2014/01/remoteFx-ing.png"><img class="size-full wp-image-288 aligncenter" alt="remoteFx-ing" src="/wp-content/uploads/2014/01/remoteFx-ing.png" width="526" height="309"></a></p>
+
+Dans notre exemple, les deux zones rouges sont les zones qui sont à redessiner. Il s'agit du champ de <em>login</em> avec le curseur clignotant et du bouton <em>connect</em> qui se met en surbrillance quand la souris passe dessus.
+
+
+
+L'encodage remoteFX travaille avec une grille de tiles de 64x64, il s'agit de la grille en jaune. Dans cet exemple, le message remoteFx contiendrait donc:
+
+<ul>
+	<li>une commande de surface avec les coordonnées origine de la grille;</li>
+	<li>une liste des coordonnées des 2 rectangles rouges qui ont été mis à jour;</li>
+	<li>le contenu des tiles 1, 2, 3, 4, 5, 6, 7, 11 et 12 correspondant aux rectangles mis à jour.</li>
+</ul>
+
+Un détail intéressant: on voit que certain tiles ne sont pas complètement utiles car la région à rafraîchir ne les couvre pas entièrement (c'est le cas pour tous les tiles dans notre exemple). Dans ce cas, l'encodeur remoteFX d'hyperV rempli le tile de vert pour les zones qui ne seront pas vues (les petits bout jaunes restant dans le tile). En utilisant la même couleur pour la partie cachée, ceci permet d'optimiser la compression du tile. Par exemple pour le tile 6, on aurait simplement du vert au niveau de "domain:" et le vrai contenu pour le bouton.
+
+
+
+Autre détail: dans hyperV la grille est toujours positionnée en (0,0)
+
+
+
+Le bug sur lequel j'ai travaillé est que l'encodeur remoteFx de FreeRDP envoie actuellement les 15 tiles plutôt que seulement ceux concernés par la région à rafraîchir.
+
+<h1>Liens</h1>
+
+La liste des matériaux qui m'ont servi pour l'écriture de cette article:
+
+<ul>
+	<li>un <a href="http://blogs.msdn.com/b/rds/archive/2012/08/06/remotefx-adaptive-graphics-in-windows-server-2012-and-windows-8.aspx" target="_blank">article</a> de blog de microsoft;</li>
+	<li>le <a href="https://github.com/FreeRDP/FreeRDP/blob/master/libfreerdp/codec/rfx.c" target="_blank">code</a> évidement (what else ?)</li>
+</ul>
+
+ </body></html>

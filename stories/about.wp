@@ -1,0 +1,30 @@
+<div itemscope itemtype="http://data-vocabulary.org/Person">
+<meta itemprop="role" content="owner">
+<meta itemprop="affiliation" content="Hardening consulting">
+
+<p style="text-align: center;">
+<img itemprop="photo"
+	class="aligncenter" style="margin-top: 1px; margin-bottom: 10px;" 
+	alt="Portrait" src="http://www.hardening-consulting.com/wp-content/uploads/2013/09/22a0a1b.jpg" width="182" height="182">
+</p>
+</div>
+
+Ce blog est alimenté par <span itemprop="name">David FORT</span>. Je suis un passionné de développement logiciel, 
+mes sujets de prédilection sont la sécurité, le réseau et le graphique. GNU/Linux est mon
+système d'exploitation quotidien depuis 1995, que ce soit personnel ou professionnel. 
+Je vis à <span itemprop="location">Rennes</span>, capitale de la Bretagne en France.
+
+Je travaille depuis plus de 13 ans dans le développement logiciel, j'ai passé la 
+majorité de ma carrière chez des éditeurs logiciel et toujours dans le domaine de la sécurité informatique.
+
+Je fais partie de la core team des projets FreeRDP et FreeRDS. Je fais aussi des 
+contributions régulières au projet wayland, dont je suis le mainteneur officiel pour
+le compositeur RDP.
+
+
+# M'employer
+Je propose mes services pour des missions d'expertise, d'audit ou de développements logiciels.
+
+# Contact
+Vous pouvez me contacter par mail: contact at hardening-consulting.com.
+

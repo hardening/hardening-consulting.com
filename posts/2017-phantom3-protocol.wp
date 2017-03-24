@@ -1,0 +1,154 @@
+<img class='alignright' src='/images/drone.png' width='100px'>
+
+En regardant les visites Piwik, je me suis aperçu qu'il y avait un certain intérêt
+avec mon article précédent sur le [DJI Phantom 3][unboxing].
+J'ai aussi vu qu'une [personne][pc ground] a le même objectif que moi: faire un
+logiciel pour diriger son Phantom 3 à partir d'un ordinateur portable.
+
+Il est sans doute temps de parler un peu de mes découvertes sur le protocole
+qui est parlé entre le Phantom 3, la télécommande, la caméra et l'application mobile.  
+
+
+# Les bases du protocole
+
+## Entête
+
+Les paquets sont découpés en deux: une entête et une charge utile. 
+
+L'entête a le format suivant:
+
+```
+-------------------------------------------------------------------------
+| 0 0 0 0 0 0 0 0 | 0 0 1 1 1 1 1 1 | 1 1 1 1 2 2 2 2 | 2 2 2 2 2 2 3 3 |
+| 0 1 2 3 4 5 6 7 | 8 9 0 1 2 3 4 5 | 6 7 8 9 0 1 2 3 | 4 5 6 7 8 9 0 1 |
+|-----------------------------------------------------------------------|
+|  magic - 0x55   |    payload length    |  version   |     crc8        |
+-------------------------------------------------------------------------
+```
+
+Il y a un octet magique à 0x55. Il est suivit par un champs _lenVer_ sur 16 bits. Il contient
+la taille de la charge utile et la version du protocole sur les 6 bits du haut. Enfin sur le
+dernier octet, on a une _crc8_ des 3 premiers octets.
+
+La charge utile est donc limitée à 4096 octets. Comme l'octet magique et que la version du protocole
+ne changent pas, seul la taille de la charge utile influence le calcul de la _crc8_. Ce qui veut
+dire qu'on peut même faire une grosse table qui donnerait le résultat en fonction de la seule information
+de la taille.
+
+<!-- TEASER_END -->
+
+La _crc8_ est là pour s'assurer que l'entête est saine et qu'on peut sereinement lire
+le payload (ce n'est qu'une crc, celà donne une confiance restreinte mais c'est déjà ça). 
+
+
+
+## Charge utile
+
+Le payload est suivit d'une _crc16_, ce qui permet d'avoir une certaine confiance sur
+l'intégrité du contenu. Comme je l'évoquais dans un [précédent article][reverse], il s'agit 
+d'une implémentation maison de CRC16.
+ 
+L'algorithme pour lire un paquet devient donc:
+
+```
+1. Trouver un octet à 0x55;
+2. lire une entête et vérifier la crc8 pour s'assurer qu'on peut lire un payload de la taille annoncée;
+3. lire la charge utile et calculer la crc16;
+4. si la crc16 est correcte, interpréter la charge utile, passer ces octets, sinon sauter les 4 octets d'entête
+et aller à l'étape 1;
+```
+
+Donc un packet n'est valide que si la _crc8_ des entêtes et la _crc16_ du contenu sont correctes. Ce
+n'est pas inviolable mais celà donne une certaine confiance sur l'intégrité des paquets.
+Dans le cas du Phantom 3, on imagine bien que l'objectif est plutôt la robustesse que
+la sécurité.  
+
+
+# Le format de la charge utile
+
+Le payload est constitué comme suit:
+
+```
+-------------------------------------------------------------------------
+| 0 0 0 0 0 0 0 0 | 0 0 1 1 1 1 1 1 | 1 1 1 1 2 2 2 2 | 2 2 2 2 2 2 3 3 |
+| 0 1 2 3 4 5 6 7 | 8 9 0 1 2 3 4 5 | 6 7 8 9 0 1 2 3 | 4 5 6 7 8 9 0 1 |
+|-----------------------------------------------------------------------|
+|   main   | sub  |   main   |  sub |                                   |
+|  sourceType     |    targetType   |         sequence number           |
+|-----------------------------------------------------------------------|
+| ?????|   |???|R |                 |                 |                 |
+|    flags        |    cmdSetId     |  commandId      | optionnal byte  |
+-------------------------------------------------------------------------
+```
+
+_sourceType_ contient la source du message, on a un type principal dans les 5 bits de poids faible 
+et un sous-type dans les 3 bits supérieurs.
+
+_targetType_ contient le destinataire du message. Le format est le même que pour la source.
+
+Les valeurs pour le type principal sont:
+```text
+0x00: WHO
+0x01: CAMERA
+0x02: l'application mobile
+0x03: le controlleur de vol
+0x04: la nacelle 
+0x05: CENTER
+0x06: la télécommande
+0x07: le WIFI
+0x08: DM368
+0x09: OFDM
+0x0a: PC 
+0x0b: BATTERY
+```
+
+Il y en a d'autres qui existent, mais que je n'ai pas vu dans mes captures.
+
+_sequence number_ est un numéro de séquence, d'après mes observations il est contextuel (donc il y a plusieurs
+compteurs).
+
+Dans _flags_, _R_ indique que le message est une réponse à une demande.
+
+_cmdSetId_ contient l'identifiant du jeu de commandes et _commandId_ contient la numéro de la commande.
+J'ai identifié ces jeux de commandes:
+```text
+0x00: commandes générales. Récupérer les versions, choisir la date, envoyer des pings, récupérer des informations sur les
+différents périphériques;
+0x01: les commandes spéciales. Il me semble qu'il s'agit de la mise à jour du firmware;
+0x02: les commandes concernant la caméra. Choisir les modes et les réglages;
+0x03: les commandes concernant le controlleur de vol. L'état des batteries, des moteurs, choisir les zones interdites au vol, ...
+0x04: les commandes concernant la nacelle de caméra;
+0x05: les commandes de la batterie. Récupérer l'historique ou les caractéristiques de la batterie;
+0x06: les commandes concernant la télécommande;
+0x07: les commandes pour le WIFI. La force du signal, récupérer ou paramétrer le SSID et le mote de passe WPA;
+0x08: les commandes DM368;
+0x09: les commandes OSD; 
+```
+Le dernier octet est optionnel, il n'est présent que dans les réponses à une requête. Il dépend des
+commandes.
+
+Les messages sont soit sur un schéma requête / réponse, soit sur un modèle de notification 
+(le drone ou la télécommande inondant l'application mobile de message). Le protocol n'est
+pas auto-descriptif, ce qui signifie que les interlocuteurs savent suivant le message si
+on aura l'octet optionnel.
+
+Des examples de messages de notifications:
+
+* la télécommande envoit sa position des manettes, des boutons et le niveau de sa batterie; 
+* le drone envoit sa position, le nombre de sattelites pour le GPS, le niveau des batteries,...
+
+Bien sûr il y a vraiment beaucoup de messages et de commandes.
+
+
+# Conclusion
+
+D'après mes recherches les autres engins volants de DJI (et même la caméra OSMO) ont
+tous des protocoles dans le même esprit que le Phantom 3. Je n'ai pas testé avec le
+nouveau phantom 4 mais si vous souhaitez m'en envoyer un pour tester, je me ferais
+un plaisir de le faire et de vous donner mes résultats ;) 
+
+
+
+[unboxing]: /en/posts/20160818-playing-with-DJI-phantom-3.html
+[pc ground]: http://pseudodeterminism.blogspot.fr/2017/01/monitoring-telemetry-for-dji-phantom-3.html
+[reverse]: /en/posts/20161115-reverse-engineering-an-android-app.html

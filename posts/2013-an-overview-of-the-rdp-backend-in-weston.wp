@@ -1,0 +1,146 @@
+<img class="alignright" alt="wayland" src="/wp-content/uploads/2013/09/wayland.png" width="82" height="105">
+Un billet touffu pour parler du compositeur RDP dans weston, le compositeur de référence de wayland.
+
+#Présentation wayland / weston
+
+Le projet wayland vise à remplacer X11, il ne défini qu'un protocole. Il se concentre sur ce 
+que X11 aurait dû rester: une manière de faire des IPCs (Inter Process Communication).
+
+
+Tiré de la documentation du projet wayland, quand un client fait des mises à jour de son affichage sous X11:
+
+<img class="alignnone" alt="Architecture avec X11" 
+	src="http://wayland.freedesktop.org/x-architecture.png" width="533" height="507">
+
+
+On voit qu'avant que les actions des clients du server X atteignent le matériel, 
+on a tout le temps de voir du paysage:
+
+* le client envoie ses actions au serveur X ;
+* il les envoie au compositeur (le gestionnaire de fenêtres la plupart du temps), 
+qui renvoie au serveur X l'image à afficher ;
+* et finalement ça atteint le matériel, ouf !
+<!--TEASER_END-->
+
+
+Sous wayland, le schema est le suivant:
+<img class=" alignnone" alt="" src="http://wayland.freedesktop.org/wayland-architecture.png" width="319" height="500">
+
+C'est beaucoup plus direct:
+
+* le client wayland envoie ses changements au compositeur ;
+* le compositeur fabrique une frame avec ce qu'il a obtenu des différents clients
+et envoie ça au matériel
+
+
+Avec wayland "every frame is perfect", le compositeur prend soin de n'envoyer au matériel qu'une frame finalisée.
+
+# Le backend RDP
+
+Le projet Weston est le compositeur de référence de wayland: il s'agit de donner un
+exemple fonctionnel et clair de comment doit fonctionner un compositeur dans le cadre de wayland. 
+Il implémente notamment un shell de référence (desktop-shell), et possède déjà d'assez nombreux 
+backend matériel:
+
+* DRM / KMS: pour s'interfacer avec les APIs éponymes pour les accès vidéos ;
+* udev: pour les accès et la détection des souris / claviers ;
+* fbdev: utilisation du framebuffer ;
+* rpi: déclinaison pour le raspberry pi.
+
+Dans weston, un backend doit fournir quelques fonctions qui vont permettre les accès 
+aux <em>seats</em> (clavier / souris en gros) et à un périphérique d'affichage. 
+Le backend sera responsable de la détection des <em>outputs</em>: les moniteurs raccordés au périphérique.
+
+
+Le backend RDP fait tout ce travail d'interfaçage avec weston, l'interface RDP est 
+fournie par le projet FreeRDP. Le backend est headless, c'est à dire qu'il n'a pas de 
+vrai matériel avec lequel interagir, ses périphériques sont: pour la vidéo un buffer, 
+et pour les entrées les évènements clavier souris des clients RDP. Il maintient l'affichage 
+courant en utilisant le <em>pixman renderer</em> qui va faire le rendu de l'image visible dans 
+un buffer mémoire. Avant même qu'un client RDP se soit présenté, on a déjà l'image visible calculée.
+
+
+<img class="alignnone" alt="RDP compositor" src="/wp-content/uploads/2013/09/RDP-compositor-1024x577.png" 
+	width="858" height="484">
+
+
+
+Le backend se met en écoute des connexions RDP. À chaque client RDP va être associé une 
+<em>seat</em> (un clavier et une souris), ce qui va donner un curseur par client RDP. 
+Si on est connecté avec deux clients RDP, on a deux curseurs souris indépendants et les focus correspondants.
+
+Quand les clients wayland ont une activité, l'image globale du desktop est reconstruite: 
+l'image finale est générée par le pixman renderer qui va prendre les surfaces dans 
+l'ordre et dessiner jusqu'à ce que toute l'image visible soit construite (ou qu'on 
+soit à cours de surfaces). Les zones de l'écran qui ont été modifiées sont renvoyées 
+aux clients RDP avec une commande RDP "surface". Les images sont envoyées au format 
+brut (<em>raw</em>) ou bien encodées en <em>remoteFx</em> ou <em>NS Codec</em>, suivant 
+les capacités du client RDP. Le backend gère aussi le fait que le client ne demande plus 
+de mise à jour de l'affichage, comme par exemple quand la fenêtre client RDP est iconomisée.
+
+# Limitations et perspectives
+
+## Curseur souris coté client
+
+En RDP il serait théoriquement possible de dessiner le curseur coté client, mais plusieurs obstacles techniques sont là:
+
+* pour weston le curseur de la souris est une surface quelconque, il est donc difficile 
+au moment de faire le rendu de tout dessiner sauf la surface du pointeur. De plus avec 
+le multi-seat, il faudrait dessiner les pointeurs des autres <em>seat</em> sauf celui 
+du client courant, ce qui obligerait à maintenir une image du desktop par client RDP ;
+* Le RDP ne supporte pas de pointeur client sous forme de pixmap, seulement sous forme 
+de masques de bits ou de bitmap avec une couleur. Il faudrait donc détecter quand on est 
+dans ce cas (et dans weston le curseur par défaut a déjà du canal alpha avec un dégradé sur les bords).
+
+
+Pour l'instant, on désactive le curseur client et c'est weston qui dessine les curseurs: 
+autant dire que quand on bouge la souris ça le fait travailler.
+
+## Résolution
+
+Dans la future version 1.3 de wayland / weston, le desktop s'adapte à la résolution 
+annoncée par le client RDP: si le client RDP veux une résolution en 1024x768 et que le 
+desktop est en 800x600, le desktop se redimensionne (un changement de mode, comme on 
+ferait un changement de résolution dans les paramètres graphiques). C'est le patch dont 
+je parlais dans ce <a title="Mon patch de changement de résolution finalement accepté" href="http://www.hardening-consulting.com/?p=70&amp;lang=fr">billet</a>.
+
+J'avais fait des essais pour mettre à l'échelle l'image du desktop, à la résolution du client, mais:
+
+* c'est très gourmand en calculs (on atteint les limites du <em>pixman renderer</em>) ;
+* il faut maintenir une image par client RDP ;
+* le curseur de souris mis à l'échelle est juste horrible.
+
+
+La version 1.2, stable actuelle, envoie un ordre RDP pour que le client se redimensionne à 
+la taille du desktop. Ce ne sera plus le cas dans la prochaine 1.3.
+
+## Vous reprendrez bien un petit bout de Wayland ou de RDP ?
+
+Des petites choses qui pourrait être sympa pour la suite:
+
+* mapper le clipboard RDP sur le clipboard wayland: pour l'instant la partie serveur 
+du channel <em>clipdr</em> n'est que dans la version de développement de FreeRDP. On va être 
+gentil et dire que le code mérite de mûrir un peu ;
+* gérer le changement de résolution à l'initiative du client: fonction apparue avec RDP8. 
+Tout est prêt coté weston et FreeRDP pour accueillir ce genre de fonctionnalités ;
+* implémenter la synchronisation de frames: quand le réseau est de mauvaise qualité, 
+weston ne cherche pas à voir si le client RDP a 20 frames de retard, il envoie les mises 
+à jour. Donc on pourrait "accumuler" du changement le temps de recevoir les acquittements 
+de réception des frames (ce qui pourrait permettre de regarder de la vidéo en ne montrant 
+qu'une ou deux images par secondes) ;
+* faire une extension du protocole wayland: ça pourrait permettre à un client wayland 
+tournant avec le backend RDP d'avoir accès aux channels RDP. On peut par exemple imaginer
+une version de VLC qui se sert du channel <em>TSMF</em> pour qu'une vidéo soit décodée coté
+client RDP.
+
+
+# Sources
+
+Les sources de cet article:
+
+* cette très bonne [conférence](http://www.youtube.com/watch?v=RIctzAQOe44) de Daniel Stone 
+donne une bonne introduction sur wayland ;
+* la [documentation](http://wayland.freedesktop.org/architecture.html) sur le site de wayland est très bien faîte ;
+* le [code](http://cgit.freedesktop.org/wayland/weston/tree/src/compositor-rdp.c) du compositeur RDP évidement (le code c'est la doc') ;
+* le site de [FreeRDP](https://github.com/FreeRDP/FreeRDP/wiki)
+

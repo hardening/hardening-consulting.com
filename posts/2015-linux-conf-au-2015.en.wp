@@ -1,0 +1,29 @@
+<img class='alignright' src='/images/conference.jpg' width='150px'>
+
+After the CCC, the LCA (Linux Conference Australia) is over. This year, the conference took place
+in New Zealand. Here's some talks I have liked:
+
+* A [talk][glamor] by Keith Packard on the advances with glamor. <!-- TEASER_END --> It's interesting and there's 
+more than was presented at XDC 2014. So a nice update !
+* The [keynote][keynote] with Linus and others, which is essentialy a Q&A, but that's fine. Linus
+ofen pretend to be not as good as people expect him to be, and he likes to say he's a bad person. 
+Anyway he's a charismatic person with strong ideas, so hearing him arging is always interesting. In 
+this talk I have appreciated the remarks on "vocal minority" with systemd and complex programs that will
+remain complex even with documentation (some taste of lived situations in previous lifes); 
+* I have liked too that [talk][debian friends and family] on installing a debian for
+friends and family. Nothing exceptionnal or very new, but that's the kind of talk where you hear
+about neat tools that you didn't know;
+* I have also found interesting the [presentation][MST] of David Airlie on MST 
+(Multi Stream Transport) display support;  
+* a nice [talk][shaders optimization] on optimization of shaders in MESA;  
+ 
+
+It's only the one that have appreciated the most, if you want to make your own opinion,
+go and watch the corresponding [youtube channel][youtube channel].
+
+[keynote]: https://www.youtube.com/watch?v=bAop_8l6_cI
+[glamor]: https://www.youtube.com/watch?v=dXR-MVQvQZw
+[debian friends and family]: https://www.youtube.com/watch?v=-Jfk_GtLt0Q
+[youtube channel]: https://www.youtube.com/user/linuxconfau2015
+[MST]: https://www.youtube.com/watch?v=6301tGNs9Dc
+[shaders optimization]: https://www.youtube.com/watch?v=K-5DTAD2Isk

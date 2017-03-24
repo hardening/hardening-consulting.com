@@ -1,0 +1,150 @@
+<img class='alignright' src='/images/web-logo.jpg'>
+Celà faisait un bout de temps que j'étais agacé par wordpress. Tout le temps des 
+mises à jour, il y a même eu une fois une mise à jour, soit-disant annodine,
+du plugin gérant les traductions qui m'a corrompu mes articles. 
+La fameuse mise à jour annodine m'a obligé à repasser sur tous les posts pour remettre correctement les informations de langages.
+Le genre de truc que j'adore. 
+<!-- TEASER_END -->
+
+<img class='alignleft' src='/images/wordpress-fix.jpg'>
+Je ne n'étais pas complètement satisfait de l'apparence ce mon site, c'est
+le problème d'utiliser des thèmes existants: on ne maîtrise rien. D'ailleurs j'avais
+constater des petits bugs lors de l'utilisation du thème précédent, suivant comment
+on remplissait certains champs ça ne marchait pas toujours, sans que j'ai réussi
+à identifier ce qui posait problème.
+
+Et puis wordpress c'est lent, c'est lent, mais qu'est ce que c'est lent.
+Donc j'ai commencé à regarder ailleurs.
+
+
+# Migrer...
+<img class='alignright' src='/images/wordpress-broken.jpg'>
+Ce n'est pas un billet pour dézinguer wordpress, ce serait tirer sur l'ambulance.
+J'aurais pu essayer les nombreuses recettes qui font que wordpress est moins lent, 
+mais ça reste des plâtres sur une jambe de bois. 
+
+J'ai re-regardé les produits que j'avais passé en revue lors du choix de wordpress.
+Mais rien n'avait fondamentalement changé. 
+
+En analysant mes besoins, j'ai dégagé que:
+
+* je voulais que le site ai une apparence qui me plaise mais sans partir dans l'enfer
+de la création de site (désolé pour ceux dont c'est le métier) ;
+* quelque chose qui gère le multi-langage nativement ou alors que ce soit aisé de
+le faire ;
+* si possible que les articles ne soit pas à écrire en HTML ;
+* que je puisse récupérer les anciens articles de wordpress. Je peux le faire à la main
+mais c'est quand même extrêmement besogneux (pour ne pas dire autre chose).
+
+J'en suis donc arrivé à tester des générateurs de sites statiques (en voyant ce que
+font les autres, il faut bien le dire). J'ai découvert 
+qu'il y avait un nombre incroyable de logiciel de ce style. Une petite recherche
+"static site generator" sur google suffit à s'en convaincre.
+
+# Les concurrents
+Dans cette catégorie il y a les inévitables générateurs de site en ruby. Mais mon
+expérience m'a fait pensé que j'aurais à connaitre le *ruby* si je partais dans ce
+choix là (vous verrez dans la suite que mon petit doigt ne m'avait pas trompé). Je suis donc
+passé à coté des [Jekyll][Jekyll], [Octopress][Octopress] et tous leurs petits amis à base de bijoux-bijoux.
+
+Je me suis plutôt restreint à ceux écrit en python, dans cette catégorie:
+
+* [Hyde][Hyde]: le pendant du célèbre [Jekyll][Jekyll] mais en python ;
+* [Nikola][Nikola]: qui semble être un fork ou plutôt une spécialisation de Hyde ; 
+* [Blogofile][Blogofile]: très orienté blog ;
+* [Pelican][Pelican] ;
+* et bien d'autre que j'ai essayé. Soit sans succés: impossible à faire fonctionner, 
+soit il ne vérifiait pas mes pré-requis.
+
+# L'épreuve
+
+## Installation
+Je me suis donc essayé tous ces générateurs de sites statiques. Les installations
+sont toujours très faciles: 
+
+* un virtualenv ;
+* un peu de **pip install** ;
+* la commande magique (le nom du projet) avec quelques arguments ;
+
+et voilà on a un template de site statique. 
+
+C'est là que les choses sérieuses commencent: changer le thème pour avoir un truc
+qui me plaise, essayer de mettre un peu de contenu, voir ce que propose le projet
+pour récupérer ses petits à partir de wordpress. 
+
+Tous ces projets se ressemblent énormément, quand on en essaye un on est
+pas perdu sur le suivant. Ils proposent tous plusieurs moteurs de template archi-standard: Mako, Jinja2,
+reStructuredText... Mais c'est comme toujours quand on a trop de choix, on arrive pas 
+à choisir.  
+
+Néanmoins, j'ai rapidement écarté Pelican et Blogofile qui ne m'ont pas plu et avec
+lesquels je n'ai pas réussi à gérer agréablement le multi-langage. 
+J'ai donc extensivement testé Nikola et Hyde. 
+
+## Nikola
+<img class='alignright' src='/images/nikola-logo.png'>
+J'ai testé Nikola en premier, il avait un importeur de billets wordpress ce qui m'a
+permis d'avoir le contenu de mon blog actuel sous Nikola en deux coups de cuillère à pot. 
+Le multi-langue est natif et marchait bien.
+
+Par contre, en essayant de le personnaliser, il y avait des commandes magiques avec
+des choses qui m'étaient inconnues autour de bootstrap. Des invocations avec pleins
+de mots magiques venu du design web, bref je n'ai pas réussi à faire quelque chose
+qui me plaise visuellement. Je l'ai laissé tombé car je ne voulais pas mettre les 
+mains dans du design avec du CSS et tout le toutime. 
+
+Néanmoins j'avais mes billets récupéré en Markdown et je me suis dit que ça pourrais 
+servir pour la suite.
+
+#Hyde
+<img class='alignright' src='/images/hyde-logo.png'>
+Pour Hyde, j'ai découvert qu'un [blog][Vincent Bernat] très intéressant que je suis était fait avec.
+Et en plus les sources du blog sont disponibles, je me suis donc frotté les mains
+en me disant que je n'aurais "que l'apparence à gérer".
+
+J'ai donc commencé à gérer un site avec Hyde et en faisant une apparence plus ou
+moins from scratch à base de [bootstrap][Bootstrap]. Voilà, comme je l'avais dit pour
+Nikola, je ne voulais vraiment pas mettre les mains dans le CSS :)
+
+La documentation de Hyde est bordélique et lacunaire, il faut utiliser des tutoriaux
+pour appréhender le projet. Les sites fait avec aident aussi beaucoup. En passant,
+le support multi-language n'est pas du tout bien intégré mais on s'en sort quand
+même avec des plugins. On est obligé de mettre les mains dans le python pour les plugins,
+j'avais donc eu le nez creux pour le Ruby. Il semble aussi y avoir plusieurs versions de
+Hyde qui cohabitent dans les docs disponibles, et évidement elle ne sont pas compatibles
+entre elles (ce serait trop facile).
+
+
+# And the winner is ...
+Au final, j'ai réussi à faire un site satisfaisant avec Hyde. Quand j'ai
+voulu générer des méta-données (post par mois ou par années par exemple), c'était
+tellement compliqué (je n'ai rien compris au grouper et sorter), que j'ai
+commencé à m'interroger sur la pertinence de Hyde.
+
+J'avais les posts de mon blog actuel en markdown, un design de site fait pour Hyde en
+Jinja2 mais transformable en un autre langage de templates si nécessaire. Là on peut dire 
+que j'avais vraiment superbement évité de faire du CSS et du design web.
+
+Donc j'ai transformé le design du site en Mako pour Nikola, et mon nouveau site web
+est donc généré par Nikola. Il gère sans rien faire le multi-langue anglais / français, 
+les histoires d'archives et les flux RSS. J'ai l'apparence que je souhaite grâce
+à un thème maison fait avec du bootstrap. J'ai importé la totalité des anciens post
+grâce au script d'import.
+ 
+# Conclusion
+Quand on veut faire quelque chose on est obligé de maitriser le sujet: quand on veut
+un site web, on fera forcément du CSS et du HTML.
+
+PS: évidement pour que Nikola fonctionne comme je le souhaitais, j'ai dû mettre les mains
+dans le code et utiliser la version upstream. Mais c'est aussi ça qu'on aime avec
+logiciel libre non ? 
+
+
+[Jekyll]: http://jekyllrb.com/
+[Octopress]: http://github.com/octopress
+[Hyde]: http://hyde.github.io/
+[Nikola]: http://getnikola.com/
+[Blogofile]: http://www.blogofile.com/
+[Pelican]: http://blog.getpelican.com/
+[Vincent Bernat]: http://vincent.bernat.im/fr/blog/
+[Bootstrap]: http://getbootstrap.com/

@@ -1,0 +1,106 @@
+## -*- coding: utf-8 -*-
+<%namespace name="base" file="base_helper.tmpl" import="*" />
+<%namespace name="bootstrap" file="bootstrap_helper.tmpl" import="*" />
+<%namespace name="notes" file="annotation_helper.tmpl" import="*" />
+${set_locale(lang)}
+<!DOCTYPE html>
+<html
+%if comment_system == 'facebook':
+xmlns:fb="http://ogp.me/ns/fb#"
+%endif
+lang="${lang}">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    ${bootstrap.html_head()}
+    <%block name="extra_head">
+    </%block>
+    % if annotations and post and not post.meta('noannotations'):
+        ${notes.css()}
+    % elif not annotations and post and post.meta('annotations'):
+        ${notes.css()}
+    % endif
+    ${extra_head_data}
+</head>
+
+<body>
+<div class="wrapper">
+  <div class='topSpacer'></div>
+  <h1 class="siteBanner siteName">Hardening consulting</h1>
+  <h4 class="siteBanner">Bits from the cyberspace</h4>      
+</div>
+
+<!-- Menubar -->
+<nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+<div class='container'>
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        % if lang == 'fr':
+        	<a class="navbar-brand homeButton" href="${abs_link('/')}"><span class="icon ion-home"></span></a>
+        %else:
+        	<a class="navbar-brand homeButton" href="${abs_link('/' + lang)}"><span class="icon ion-home"></span></a>
+        %endif
+    </div>
+    <!-- old class => collapse navbar-collapse navbar-ex1-collapse --> 
+    <div class="navbar-collapse collapse">
+        <ul class="nav navbar-nav">
+            ${bootstrap.html_navigation_links()}
+        </ul>
+        %if search_form:
+            ${search_form}
+        %endif
+
+        <ul class="nav navbar-nav navbar-right">
+        	<li><a href="mailto:${author_email}" class="pure-button socialButtons">
+				<span class="icon ion-email"></span></a></li>
+	    	<li>
+	    		<a class="pure-button socialButtons" href="${_link('rss', None, lang)}">
+				<span class="icon ion-social-rss"></span></a></li>
+	    	<li><a href="https://www.google.fr/${author_googleplus}?rel=author" class="pure-button socialButtons">
+				<span class="icon ion-social-googleplus"></span></a></li>
+	    	<li><a href="http://fr.linkedin.com/pub/${author_linkedin}/" class="pure-button socialButtons">
+				<span class="icon ion-social-linkedin"></span></a></li>
+	    	<li><a href="http://github.com/${author_github}/" class="pure-button socialButtons">
+				<span class="icon ion-social-github"></span></a></li>
+        
+            <%block name="belowtitle">
+            %if len(translations) > 1:
+                <li>${bootstrap.html_translations()}</li>
+            %endif
+            </%block>
+        </ul>
+    </div><!-- /.navbar-collapse -->
+</div>
+</nav>
+<!-- End of Menubar -->
+
+<div class="container">
+    <div class="body-content">
+        <!--Body content-->
+        <div class="row">
+            <%block name="content"></%block>
+        </div>
+        <!--End of body content-->
+
+		<hr>
+        <footer>
+            ${content_footer}
+        </footer>
+    </div>
+</div>
+
+${bootstrap.late_load_js()}
+<!-- $-{base.html_social() -} -->
+    <script type="text/javascript">jQuery("a.image-reference").colorbox({rel:"gal",maxWidth:"100%",maxHeight:"100%",scalePhotos:true});</script>
+    <%block name="extra_js"></%block>
+    % if annotations and post and not post.meta('noannotations'):
+        ${notes.code()}
+    % elif not annotations and post and post.meta('annotations'):
+        ${notes.code()}
+    % endif
+${body_end}
+</body>

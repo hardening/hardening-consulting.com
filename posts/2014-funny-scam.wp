@@ -1,0 +1,63 @@
+<img class='alignright' src='/images/security-banner.jpg'>
+Voici le contenu d'un mail que j'ai reçu il y a quelques semaines:
+
+> Dear Manager,
+>
+> (If you are not the person who is in charge of this, please forward this to your CEO,Thanks)
+>
+> This email is from China domain name registration center, which mainly deal with the domain name 
+> registration and dispute internationally in China.
+> We received an application from Huake Ltd on November 17, 2014. They want to register " hardening-consulting " 
+> as their Internet Keyword and " hardening-consulting .cn ", " hardening-consulting .com.cn ", " hardening-consulting .net.cn ",
+> " hardening-consulting .org.cn " domain names etc.., they are in China domain names. 
+> But after checking it, we find "hardening-consulting " conflicts with your company. 
+> In order to deal with this matter better, so we send you email and confirm whether this 
+> company is your distributor or business partner in China or not?
+>
+> Best Regards,
+>
+> Jim
+> General Manager 
+> Shanghai Office (Head Office)
+
+Le mail venait de _ygregistryltd.com_ et la démarche ressemblait à ce qu'il peut se
+passer avec l'AFNIC en France. Sympa de prévenir avant qu'on se fasse cybersquatter !
+
+<!-- TEASER_END -->
+
+Je réfléchissais un peu à ça. Est-ce que ça me gênais vraiment qu'une autre compagnie
+ai le même nom en Chine, et veuille avoir son nom de domaine en _.cn_ ? Pas sûr que je fasse
+jamais du business avec des clients chinois et que j'ai à m'inquiéter de ça. 
+
+Néanmoins j'ai fait la réponse en conséquence:
+> Hello,
+> I can confirm you that I'm not related to "Huake Ltd" at all. They are
+> not my distributor or partner in China or in any other country.
+>
+> Best regards.
+ 
+ 
+Et puis ce matin, surprise, un mail d'un certain _Jiang zhihai_ de Huake Ltd: 
+
+> Dear Sirs,
+>
+> Our company based in chinese office, our company has submitted the “hardening-consulting” as 
+> CN(.cn/.com.cn/.net.cn/.org.cn) domain name and Internet Keyword, we are waiting for 
+> Mr. Jim’s approval. We think this name is very important for our products in Chinese 
+> market. Even though Mr. Jim advises us to change another name, we will persist in this name.
+>
+> Best regards
+ 
+Curieux j'ai cherché des informations sur ce fameux _Jiang Zhihai_, et je suis tombé immédiatement
+sur des [blogs][blog] traitant de ce scam.
+
+Une arnaque bien ficellée genre bon flic / mauvais flic, avec le registrar de domaine qui profite de l'opération
+à la fin.
+Le registrar prévient d'une soit-disant tentative de cyber-squattage (bon flic), et comme par hasard
+le client intéressé envoie un mail pour dire qu'il prendra quand même le nom de domaine (mauvais flic).
+Évidement les règles d'attribution des noms de domaines couvrent ces cas là, pas
+besoin d'acheter tous les noms de domaines chez tous les TLD. Dixit les pages de blogs,
+le registrar en question refuse d'être join au téléphone, et semblerait que les sommes
+qu'ils demandent soient rondelettes.
+   
+[blog]: http://www.oxgadgets.com/2014/04/the-chinese-internet-keyword-scam.html

@@ -1,0 +1,11 @@
+<img class='alignright' src='/images/conference.jpg' width='150px'>
+
+This is a yearly conference, I really like it. The content is often original and interesting. 
+The slides and videos are available from this week. In all the interesting things I have read, my preferred were:
+
+* <a href="http://events.linuxfoundation.org/sites/events/files/slides/tmc_sjennings_linuxcon2013.pdf">Linux Transparent Memory Compression</a> : very impressive to see that you can run at 140% of the memory without any apparent overhead when the kernel has that feature activated !
+* When I read <a href="http://events.linuxfoundation.org/sites/events/files/slides/linuxcon2013.pdf">Writing Code: Keep It Short, Stupid!</a>, i feel like i was hearing myself for code style and application design.
+* <a href="http://events.linuxfoundation.org/sites/events/files/slides/Binary_Compatibility_for_library_devs.pdf">Binary compatibility for library developers</a> is very instructive for that unknown subject. I knew that some guidelines exist for KDE, but it was good to see it again.
+
+
+All the slides are located <a href="http://events.linuxfoundation.org/events/archive/2013/linuxcon-north-america/program/slides">here</a>.

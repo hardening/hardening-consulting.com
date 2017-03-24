@@ -1,0 +1,102 @@
+<img class="alignright" alt="FreeRdp" src="/images/FreeRDP-small.png">
+
+These days, I have been working on having writes being non-blocking in [FreeRdp][FreeRdp]. 
+That makes me walk through most of the low level component of FreeRdp, so let me share
+things I have collected during this code walk. 
+
+# Setting write calls non-blocking
+
+The actual code is non-blocking for read: it handles a _EAGAIN_ or _EWOULDBLOCK_ 
+for a read() call. But for write calls, it will actively wait until all data have been sent.
+For the FreeRDP client you almost never hit the case where write calls gets blocked, because
+most of the traffic is from the server to the client (sending screen updates). You can 
+hit it anyway when using the channels: Disk Redirection (pushing a file to the server)
+ or audio in (microphone exported to the server).
+
+But when you're in FreeRDS acting as a RDP server, blocking writes is very common. Just 
+try to see a fullscreen video through a slow WIFI connection.
+
+<!-- TEASER_END -->
+
+## Non-block.....
+
+In FreeRDP, most of the write calls don't care if the bytes have been really sent
+and are currently traveling on the network. All the code suppose that we have the
+pseudo blocking mode. When we set write non blocking, we have to deal with the parts
+of FreeRDP code that rely on the fact that packets have been effectively sent. For most
+of them they are related to negotiation, with pieces of code that send a request and actively
+wait for an answer.    
+
+My changes introduce a _buffered BIO_ to bufferize writes. When a write call can't be
+honored because of a congested output buffer, this BIO will store the pending byte and will
+remember that write has blocked. But the BIO's answer will be "everything is fine, I wrote
+all your bytes". This way, the callers that don't care about bytes being effectively
+sent don't get troubled. On the other side, the callers that care can flush themselves
+the output buffer. It allows too to watch for write availability: this feature is used in
+FreeRDS.  
+
+## Changes overview
+
+The old code base was handling the misc kind of security in different ways: RDP, TLS / NLA
+and TSG had their own code. My idea has been to build an OpenSSL BIO chain and have a single front BIO that 
+would be used to read from and to write into. So once the BIO chain is created and initialized
+the callers don't know how packets are handled at the low level. 
+
+
+After my changes the chain looks like that for a RDP security connection:
+<div style="text-align:center; margin-bottom: 20px;">
+<img class="aligncenter" alt="BIO with RDP security" src='/images/FreeRdp_non_blocking_RDP.png'>
+</div>
+
+
+For a TLS or NLA connection it's much the same, expect that we have prepend a SSL BIO: 
+<div style="text-align:center; margin-bottom: 20px;">
+<img class="aligncenter" alt="BIO with TLS security" src='/images/FreeRdp_non_blocking_TLS.png'>
+</div>
+
+It looks simple, the final code is really trivial. But it was a long job to have it work that way.
+
+<u>Note:</u> the standard behavior for openSSL to read SSL records is to read 4 bytes and 
+then to read the number of bytes corresponding to the size of record (maximum 4k). I have activated the
+_readahead_ option that makes OpenSSL ask to read 0xffff bytes and deal with records it can find
+in the retrieved buffer. This way we save many read() system calls.
+
+
+# TSG
+## Terminal Services Gateway
+RDP and TLS/NLA were done, I had to deal with TSG (Terminal Services Gateway).
+I had a very general idea of TSG, and going in the details, there have been many 
+surprises.  
+
+From my point of view TSG has been done with in mind to reuse as much components
+as possible. It doesn't look like a clean RDP gateway protocol. It is a complicated
+and truly inefficient protocol.
+
+## Under the hood 
+
+TSG uses 2 connections: one to send data to the server and another to receive data
+from the server. For the first, an _HTTP POST_ is done with a body of 1 giga (data
+going to the gateway). For the second, a POST is done and the answer has a body of 1 giga (data
+coming from the gateway). Data are sent and received as part of the HTTP bodies.
+  
+For the juicy details of the protocol you can watch FreeRDP source code, it has nice ASCII art
+diagrams.
+
+After the changes, the BIO chains for TLS security over TSG look like this: 
+
+<div style="text-align:center; margin-bottom: 20px;">
+<img class="aligncenter" alt="TSG" src='/images/FreeRdp_non_blocking_TSG.png'>
+</div>
+
+
+
+# To conclude
+
+The final version would probably need some polishing, but the essential is there.
+
+I didn't talk about it, but on the TSG I really think the thread handling
+RPC could be dropped: a future work. I have done enough TSG these days. 
+
+The pull request was integrated upstream yesterday.
+
+[FreeRdp]: http://www.freerdp.com/

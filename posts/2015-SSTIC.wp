@@ -1,0 +1,48 @@
+<img class='alignright' src='/images/security-banner.jpg'>
+Et voilà SSTIC 2015 c'est fait, des conférences de très bon niveau cette année. Les années
+précédentes le niveau n'était pas toujours égal mais cette année à peu près tous les 
+talks étaient vraiment de bonne qualité. L'année dernière, on peut dire que les talks
+de Quarklabs étaient vraiment au dessus du lot, cette année j'ai trouvé que c'était
+ceux de l'ANSSI qui se démarquaient.
+
+
+Quelques bons talks:
+
+* tout d'abord il y avait la [conférence d'ouverture][ouverture] qui était vraiment super, enfin
+des propos de sécurité dans le contexte d'un projet, et pas de la sécurité pour la
+sécurité. Le talk était fait par un des développeurs de chrome qui parlait des étapes
+du développement de chrome, et comment ils avaient progressivement introduit la compartimentation. 
+Dans la même veine, une personne de l'ANSSI parlait de [CLIP][CLIP]
+une version durci de Linux et de ses composants. [Stemjail][stemjail] semble prometteur aussi. 
+C'était vraiment intéressant de voir comment on met en place de la sécurité en pratique; 
+<!-- TEASER_END -->
+* j'ai une espèce d'admiration pour les compileurs et l'exécution symbolique, j'adore ce sujet sans
+avoir jamais sérieusement travaillé dessus, et cette année les talks sur [picon][picon]
+et [triton][triton] m'ont beaucoup plu;
+* le [talk][consoles] sur l'historique des attaques sur consoles de jeux était vraiment divertissant;
+* très amusant aussi le [talk][vlc] de Jean-Baptiste Kempf sur l'histoire contreversée de VLC,
+des DVD et des blueray;
+* sympa le [talk][passwords] sur la génération de mots de passe à partir de sources publiques;
+* les [rumps][rumps] étaient fidèles à elle-même, même si je les ai trouvé un chouilla en dessous de celles
+des années précédentes;  
+* la [conférence de clôture][cloture] sur les révélation Snowden était très bien: par un journaliste dont la finalité était
+d'inciter les gens de la sécurité à parler avec les journalistes. Le but serait d'essayer de
+faire toucher du doigt au grand public à ces questions complexe. Une bonne remarque dans la salle:
+"pour la sécurité, c'est toujours les même qu'on voit dans les journaux et pas vraiment ceux qui sont
+les plus compétents (honnêtes)". À la réflexion, il y a quand même une question de fond:
+est-ce que les gens dans la salle du SSTIC qui travaillent majoritairement, pour l'état ou pour
+des entreprises qui sont succeptibles de profiter de l'intelligence économiques, ont intérêt
+à parler aux journalistes de sécurité et de surveillance massive ? 
+
+<u>edit</u>: les pages du SSTIC contiennent désormais les liens vers les vidéos.
+
+[ouverture]: https://www.sstic.org/2015/presentation/2015-ouverture/
+[CLIP]: https://www.sstic.org/2015/presentation/clip/
+[stemjail]: https://www.sstic.org/2015/presentation/stemjail_cloisonnement_dynamique_d_activites_pour_la_protection_des_donnees_utilisateur/
+[picon]: https://www.sstic.org/2015/presentation/control_flow_integrity_on_llvm_ir/
+[triton]: https://www.sstic.org/2015/presentation/triton_dynamic_symbolic_execution_and_runtime_analysis/
+[consoles]: https://www.sstic.org/2015/presentation/stratgies_de_dfense_et_dattaque__le_cas_des_consoles_de_jeux/
+[vlc]: https://www.sstic.org/2015/presentation/vlc-drm-blurays-hadopi/
+[passwords]: https://www.sstic.org/2015/presentation/crack_me_im_famous_cracking_weak_passphrases_using_freely_available_sources/
+[cloture]: https://www.sstic.org/2015/presentation/snowden_NSA_et_les_journalistes/
+[rumps]: https://www.sstic.org/2015/presentation/2015-rumps/

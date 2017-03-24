@@ -1,0 +1,68 @@
+<img class='alignright' src='/images/wayland.png'>
+
+I have recently <a href="http://www.phoronix.com/scan.php?page=news_item&amp;px=MTUzNDM">posted</a> a first version 
+for a FreeRds backend for weston, the reference compositor for wayland. In this post, I will talk 
+about that new compositor, if you have already read my post on the [FreeRdp][weston + RDP] 
+compositor you won't be lost.
+
+
+# FreeRds and weston
+
+FreeRds is a work-in-progress project that aims to provide a RDP server using the FreeRDP library. 
+Xrdp was based on rdesktop, you can see FreeRds like its successor but with FreeRDP as the foundation classes.
+
+Here's the architecture of FreeRds with weston providing the content to display:
+
+<p style="text-align: center;">
+<img class=" wp-image-215 aligncenter" alt="FreeRDS compositor" 
+	src="/wp-content/uploads/2013/12/FreeRDS-compositor-1024x512.png" 
+	width="819" height="410">
+</p>
+
+FreeRds and the weston backend communicate with a unix socket and a shared memory. 
+The socket is used for commands and the shared memory for the shared framebuffer. 
+FreeRds takes care of all RDP related stuff, and the job of weston is to create the content to display.
+<!-- TEASER_END -->
+
+
+At initialization, FreeRds connects on the unix socket created by the FreeRds backend of weston. Follows a negotiation:
+
+* <em>FreeRds</em> sends the keyboard layout of the RDP peer and the size of the desktop ;
+* <em>weston</em> creates a seat with a <em>xkb</em> file corresponding to the remote keyboard layout ;
+* weston creates a shared memory segment and sends the id through a <em>SharedFramebufferInfo</em> packet;
+* <em>FreeRds</em> replies with a <em>vblank</em> packet indicating that the shared framebuffer is available
+
+When a weston client have activity:
+
+* <em>wayland</em> clients update their surface contents ;
+* <em>weston</em> builds the desktop image composing all the surfaces ;
+* <em>weston</em> updates the damaged region of the shared framebuffer, then it sends 
+a <em>refreshRect</em> packet. Weston will accumulate damaged regions until it receives 
+a <em>VBlank</em> packet from FreeRds ;
+* FreeRds receives the <em>refreshRect</em> packet, it encodes the damaged regions using 
+the appropriate codec (raw, compressed or not, RemoteFx or NsCodec). A <em>VBlank</em> packet 
+is sent to Weston.
+
+
+# Future
+
+The proposed patch is a first shot but is fully functional, some improvements:
+
+* handle the SUPPRESS_OUTPUT packets: the compositor could be frozen when the RDP peer has disabled frame reception ;
+* handle extended keyboard events: code not implemented yet ;
+* implement a specific wayland protocol that would allow wayland clients to interact 
+with FreeRds. Many interesting things could be done with the RDP channels: clipboard, 
+playing videos on the client-side using the TSMF channel, playing sound, ...
+
+
+# Links
+
+These links will help you to inquiry more on the subject:
+
+* The github of [FreeRDS][FreeRDS]
+* [Wayland][Wayland] homepage
+* My [overview][weston + RDP] of the RDP compositor
+
+[FreeRDS]: https://github.com/FreeRDS/FreeRDS
+[Wayland]: http://wayland.freedesktop.org/
+[weston + RDP]: /en/posts/20131006an-overview-of-the-rdp-backend-in-weston.html "An overview of the RDP backend in weston"

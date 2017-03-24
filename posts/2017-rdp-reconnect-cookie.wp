@@ -1,0 +1,60 @@
+<img class='alignright' src='/images/rdc-icon.png' width='100px'>
+
+Et oui encore un article sur du RDP ! J'ai fait quelques expériences avec la reconnection
+automatique et je profite de cet article pour en parler un peu.
+
+<br style='clear:both;'/>
+
+# La reconnection automatique
+
+<img class='alignright' src='/images/rdp-reconnection.jpg'>
+La reconnection automatique permet au client RDP de se reconnecter à un serveur quand
+il y a eu un coupure, et ceci sans ressaisir les logins / mots de passe. La coupure peut être due à
+une coupure réseau ou même un crash serveur. L'exemple typique consiste à rabattre l'écran de
+son portable avec une connection RDP en cours, et quand on réouvre le client se reconnecte tout seul.
+
+<br style='clear:both;'/>
+<!-- TEASER_END -->
+
+## Niveau protocole
+
+La reconnection automatique est décrite dans la [spécification][reconnection spec]:
+
+<div style="width:100%; text-align:center;">
+<img class='aligncenter' src='/images/RDP reconnection workflow.png'>
+</div>
+
+* une fois le client authentifié, le serveur envoie un cookie de reconnection et un id de session dans un 
+ [Save Session Info PDU][save session info pdu]. Le client est censé le stocker et s'en servir
+ au moment de la reconnection;
+ * après la coupure, quand le client veut se reconnecter, il va utiliser l'identifiant de session et le cookie
+ qu'il va mettre dans le [client info PDU][client info PDU]. Il ne s'agit pas du cookie lui-même
+ mais d'un dérivé qui est calculé comme suit: 
+```c++
+toSend = hmac_md5(cookie, clientRandom);
+```
+ Le _cookie_ est utilisé comme clé d'un _HMAC-MD5_ et pour le contenu qui est hashé:
+ quand il s'agit d'une connexion avec la sécurité RDP, _clientRandom_ est le secret échangé durant
+ la phase de "sécurisation" de la connexion (sécurisation entre guillemets car la sécurité RDP n'est
+ pas sécurisée du tout). Quand le transport est fait au dessus de TLS (sécurité TLS ou NLA), ce sont
+ simplement 32 octets à 0 qui sont utilisés;
+ 
+ * A la réception le serveur effectue le même calcul pour vérifier que le cookie est légitime, et 
+ le cas échéant reconnecter automatiquement à la session en cours;
+
+
+On notera que la spécification dit que le cookie est censé être regénéré et renvoyé toutes les heures par
+le serveur. 
+
+
+# Conclusion
+
+Une fonctionnalité intéressante et facile à implémenter, FreeRDP avait quand même le
+soucis qu'il ne stockait pas le _clientRandom_ coté serveur, mais depuis ce [patch][clientRandom] c'est fait.
+
+
+
+[reconnection spec]: https://msdn.microsoft.com/en-us/library/cc240459.aspx
+[save session info pdu]: https://msdn.microsoft.com/en-us/library/cc240635.aspx
+[client info PDU]: https://msdn.microsoft.com/en-us/library/cc240473.aspx
+[clientRandom]: https://github.com/FreeRDP/FreeRDP/commit/b0b3a78a20b7cd3127bd14c9b3a7f7867a0af51d

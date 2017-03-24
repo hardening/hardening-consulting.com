@@ -1,0 +1,83 @@
+<img class='alignright' src='/images/wayland.png' width='100px'>
+A post written after an error I have made while coding [_UWAC_][UWAC] (Using Wayland As Client),
+my library to use wayland on the client side with the spirit of the _Xlib_. The symptoms were
+that an application using [_UWAC_][UWAC] was working with the _X11 compositor_ and was freezing
+with the _RDP compositor_. After some testing, it appeared that the _pixman renderer_ was the
+guilty component (using the _X11 compositor_ and forcing the _pixman renderer_, the behaviour
+was the same).
+<!-- TEASER_END -->
+
+#Pools, buffers, frames et friends...
+
+Before analysing what was going on, let's explain how it works under wayland. If you're
+a complete noob on the subject this [post][shared buffer] (only un french for now sorry, but
+google translate is your friend) could help.
+
+## Pools and buffers
+In my case the rendering was done using _wl_shm_, ie the communication between the compositor
+and the wayland client is done through a shared memory.
+
+So the client have to:
+
+* create a shared memory segment, for example by mmaping an "anonymous" file;
+* create a [_wl_shm_pool_][wl_shm_pool] by calling _wl_shm_create_pool()_, giving the
+file descriptor of the mmaped file and the size to use in this file;
+* once the pool exists, you can allocate [_wl_buffers_][wl_buffer] in this pool by
+calling _wl_shm_pool_create_buffer_.
+
+<img class='aligncenter' src='/images/wayland-shm.png' spacing='10px'>
+
+## Surfaces, frames
+
+<img class='alignright' src='/images/wayland frame generation.png' spacing='10px' width="500px">
+
+
+So now we have buffers that we can use to draw the content to show, the next steps are
+to attach a buffer to a surface (_wl_surface_attach_), notify damaged areas (_wl_surface_damage_),
+and finally the compositor is notified that it can use the buffer to create a frame (_wl_surface_commit_).
+
+When you've attached a buffer to a surface and that you have asked the compositor for a frame rendering,
+you're not supposed to touch to the buffer anymore. When the compositor will have no more usage of
+the buffer (typically when the frame has been created), it will send a _release_ event which
+allows the client to reuse it.
+
+By calling _wl_surface_frame_, you can be notified when the frame is rendered, and we will
+receive a _done_ event.
+
+<br style='clear: both;'/>
+
+# The bug
+
+In [_UWAC_][UWAC], I had implemented a triple buffering:
+
+* a currrent buffer where to draw;
+* a buffer that would have been sent to the compositor;
+* and finally a buffer that would be a frame waiting to be sent to the compositor (waiting for
+the _done_ event of the frame).
+
+So when initializing a window, I was creating 3 _wl_buffer_, and then I was swapping them.
+
+<img src="/wp-content/uploads/2013/10/triple-buffering.png" style='aligncenter'>
+
+I was using the event of frame rendered (_wl_surface.done_) to notify the user of the library
+that it could draw a new frame. Anyway my buffers management was controlled by the
+ _wl_buffer.release_ event: I was waiting for the compositor to notify, to swap the
+ buffer and display the next computed frame.
+ 
+My bug was there, in some situations the compositor doesn't send the  _wl_buffer.release_ event
+instantly. With the _pixman renderer_, the buffer is released when a new one is attached
+to the surface.
+
+# Conclusion
+
+I have changed my implementation, now the wl_buffers are dynamcally allocated and the frames
+are controlled by the reception of the _frame.done_ event. If the compositor is not fast
+enough to release the buffer, we allocate a new one. I was expecting a lot more buffers to be 
+allocated and in fact we only have a total of 3. 
+ 
+Thanks to Derek Foreman that found the bug and suggested the solution.
+
+[wl_shm_pool]: http://wayland.freedesktop.org/docs/html/apa.html#protocol-spec-wl_shm_pool
+[wl_buffer]: http://wayland.freedesktop.org/docs/html/apa.html#protocol-spec-wl_buffer
+[UWAC]: https://github.com/hardening/UWAC
+[shared buffer]: /posts/20131007buffers-partages-dans-wayland.html

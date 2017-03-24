@@ -1,0 +1,12 @@
+<img class='alignright' src='/images/wayland.png'>
+I have been told that the RDP compositor have been proposed for integration in Tizen
+by default.
+<!-- TEASER_END -->
+
+The original mail is [here][mailing list post]. This could give interesting things:
+
+* applications shared via RDP ;
+* help for debugging ; 
+
+
+[mailing list post]: https://lists.tizen.org/pipermail/ivi/2014-April/002167.html

@@ -1,0 +1,33 @@
+<img class='alignright' src='/images/conference.jpg' width='150px'>
+
+C'est le début de l'année et pourtant déjà des conférences sympas. La dernière en date Linux.conf.au. 
+J'ai une tendresse particulière pour celle-ci car c'est une des interventions donnée là-bas qui m'a
+donné envie de m'intéresser à wayland.
+<!-- TEASER_END -->
+
+Voilà quelques conférences qui ont retenues mon attention:
+
+* une [conférence sur DRI 3000][dri3000] par Keith Packard: <em>zero copy compositing, research to reality</em>. C'est rigolo parce qu'il 
+y a toujours en background le fait qu'on traîne l'historique quand on touche à X11. Mais il 
+semble que ces extensions soient très intéressantes et font que X11 s'approche de wayland;
+* moi j'aime beaucoup [Lennart Poettering][lennart] car je trouve que ses projets ont 
+toujours fait bouger les choses dans le bon sens. Pulseaudio, systemd, de mon point 
+de vue ce sont vraiment des projets qui sont des avancées majeures, même si il y a 
+toujours des grincheux pour critiquer (sans réels arguments la plupart du temps). 
+Dans cette [présentation][kdbus video], il parle de [kdbus][kdbus], une implémentation
+kernel de DBus. Bon, je sais, dit comme ça, ça ressemble à un gros troll pour [linuxFr][linuxfr]. 
+Mais comme il le dit: <em>je suis sûr que dans 5 ans toutes les distributions l'auront en standard</em>;
+* et puisque qu'on veut rire avec systemd, il y a [celle-là][systemd] sur les 6 étapes d'acceptation de systemd;
+* il y avait la conférence de David Airlie sur [Virgil][virgil3d] un émulateur de GPU. 
+Des slides pas très éclairant, une intervention très pointue, bref un truc de spécialiste 
+mais qui mérite le détour.
+
+
+
+[dri3000]: http://mirror.linux.org.au/linux.conf.au/2014/Thursday/96-Zero-Copy_CompositingResearch_to_Reality_-_Keith_Packard.mp4
+[lennart]: http://fr.wikipedia.org/wiki/Lennart_Poettering
+[kdbus video]: http://mirror.linux.org.au/linux.conf.au/2014/Friday/104-D-Bus_in_the_kernel_-_Lennart_Poettering.mp4
+[kdbus]: https://github.com/gregkh/kdbus
+[linuxfr]: http://linuxfr.org
+[systemd]: http://mirror.linux.org.au/linux.conf.au/2014/Monday/175-The_Six_Stages_of_systemd_-_Rodger_Donaldson.mp4
+[virgil3d]: http://mirror.linux.org.au/linux.conf.au/2014/Thursday/93-Virgil_A_virtual_3D_GPU_for_qemu_-_Dave_Airlie.mp4

@@ -1,0 +1,73 @@
+<img class="alignright" alt="rdc-icon" src="/wp-content/uploads/2014/01/rdc-icon.png" width="90" height="90">
+I have recently worked on the remoteFx encoder of FreeRdp. So here's a post to discover remoteFX.
+
+# Overview
+RemoteFx is a codec for bitmap in RDP. At the beginning of the RDP protocol, many 
+vector operations have been added: draw a rectangle with a solid color, move a region 
+from one place to another, do some complicated bitmap operations... It looks like Microsoft 
+was trying to put in the protocol the operation that were supported by the GDI. That gives very 
+complicated operations, for example I imagine very few people understand the ninegrid operations.
+
+
+At the end the result was not that good:
+
+* implementing a RDP client becomes very complicated as to have reasonable performance, 
+you need to implement many commands. The legacy clients (lightweight clients) stay with their factory capabilities ;
+* the server code becomes complicated too as you have to adapt to the client capabilities. 
+That means many if() in the code and some fall-back for unsupported command ;
+* the graphics world has changed and most tool-kit that creates the content to display, 
+just send a big bitmap update, the vector informations are totally lost.
+
+
+So some researches have been done to optimize the required bandwidth for transmitting bitmaps. Doing so:
+
+* the clients become easier to code as they can support only a few codecs ;
+* the decoders / encoders can be hardcoded on a chip for best performances. For example for 
+the h.264, even my smartphone has a h264 encoder / decoder ;
+* the server can do some heuristic to compute the best codec to use depending on the screen region ;
+* using lossy data compression algorithm allows to optimize the bandwidth.
+
+
+# RemoteFX
+
+I won't cover the details of the remoteFX compression, as I'm far from being an expert 
+on this subject. A very high level overview
+<!-- TEASER_END --> 
+is that pixels have their colorspace changed. In this new colorspace, each different component
+ of the colors are separed as streams and the compression operate on these stream. If the colorspace
+  was RGB, it would mean compressing streams of red, green and blue.
+
+<p style="text-align: center;">
+<img class="aligncenter" alt="remoteFx-ing" src="/wp-content/uploads/2014/01/remoteFx-ing.png" width="526" height="309">
+</p>
+
+In this example, the two red areas are the ones that should be refreshed. It's the login 
+field with the blinking cursor plus the connect button that overlights when you go over it.
+
+The remoteFx codec works with a grid of 64x64 tiles: the yellow grid. In our example, the remoteFx message would contain:
+
+* a surface command with the coordinates of the grid origin ;
+* a list of rectangles to update ;
+* the content of tiles 1, 2, 3, 4, 5, 6, 7, 11 and 12 matching the rectangles.
+
+Note: some tiles aren't totally covered by the rectangles (in our example it's the case
+for all tiles). The remoteFx encoder of HyperV fills with green the zones that won't be 
+visible (the remaining yellow areas in the tile). By using the same color for the hidden part, 
+they obtain better compression for the tile. For example for tile 6, there would have some 
+green for "domain:" and the real content for button.
+
+
+Another detail: with HyperV the grid is always anchored in (0, 0).
+
+The bug I have worked on, is that the actual remoteFx encoder in FreeRdp sends the 15 tiles, instead of just the modified tiles.
+
+# Links
+
+Here's a list of materials, I have used to write this post:
+
+* a very interesting [post][ms blog post] from microsoft's blog ;
+* the [source code](rfx code) of course (what else ?)
+
+
+[ms blog post]: http://blogs.msdn.com/b/rds/archive/2012/08/06/remotefx-adaptive-graphics-in-windows-server-2012-and-windows-8.aspx 
+[rfx code]: https://github.com/FreeRDP/FreeRDP/blob/master/libfreerdp/codec/rfx.c

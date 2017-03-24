@@ -1,0 +1,34 @@
+<img class='alignright' src='/images/security-banner.jpg'>
+
+
+J'ai regardé quelques conférences cette année, il y en a beaucoup de très bien, et <!-- TEASER_END -->
+voici celles qui ont retenues mon attention:
+
+
+* encore une très bonne [présentation][nintendo] sur du hacking de consoles Nintendo, ce sont les
+même speakers que [l'année dernière][ccc2016] !
+
+
+Il y avait aussi de bons talks à la LCA (Linux.conf.au):
+
+* une bonne [présentation][vulkan] sur Vulkan par Dave Airlie;
+* je n'ai pas vraiment été convaincu par la [présentation sur libtls][libtls]. La nouvelle API marche sans doute très
+bien pour du basique, mais en fait on n'est rarement dans du standard et la plupart du temps
+on ne peut pas se contenter du "je voudrais faire du TLS pour sécuriser le transport
+de mon application";
+* j'ai bien aimé la [présentation][ARM linux] sur l'écosystème ARM sous Linux; 
+* 
+
+
+[nintendo]: https://media.ccc.de/v/33c3-8344-nintendo_hacking_2016
+[ccc2016]: /posts/20160144-ccc-2015.html
+[augmented reality]: https://media.ccc.de/v/33c3-8225-beyond_virtual_and_augmented_reality
+
+[vulkan]: https://www.youtube.com/watch?v=ynyO3O3zd3E
+[libtls]: https://www.youtube.com/watch?v=Wd_dyRbE4AA
+[samba]: https://www.youtube.com/watch?v=MvthtQc5TmA
+[minecraft]: https://www.youtube.com/watch?v=EIOuKGL3_bw
+[servo]: https://www.youtube.com/watch?v=an5abNFba4Q
+[ARM linux]: https://www.youtube.com/watch?v=NNol7fRGo2E
+[reproducable build]: https://www.youtube.com/watch?v=ooJXRBf72M0
+

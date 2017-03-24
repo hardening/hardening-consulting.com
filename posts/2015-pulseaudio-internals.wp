@@ -1,0 +1,89 @@
+<img class='alignright' src='/images/pulseaudio-logo.png' width='100px'>
+Pour FreeRDS, j'ai eu l'occasion de coder un peu dans Pulseaudio. Oui, oui, le sulfureux
+Pulseaudio, celui qui déchaine les passions. On a les inconditionnels des deux camps: 
+ceux qui ne le supporte pas et le désinstalle systématiquement, et ceux qui aiment
+sa stabilité et sa plétore de fonctionnalités. Un peu comme avec tous les projets de 
+[Lennart Poettering][lennart] la mauvaise foi est de mise chez les détracteurs, et on voit encore fleurir
+des critiques que les développeurs de Pulseaudio ont démontés plusieurs fois. En tout cas
+Pulseaudio est le serveur de son de l'écrasante majorité des gens sous Linux et il fait bien
+son boulot.
+
+Autant le dire tout de suite, je suis dans le camp des adorateurs, j'ai beaucoup aimé
+travaillé dans et avec Pulseaudio. C'est vraiment un projet stable et mature, mais aussi compliqué.
+Évidement quand on veut de la performance, on arrive rapidement avec des architectures qui
+sont faite pour ça, et elle nécessite un peu d'apprentissage. Je vous propose donc un 
+petit tour dans un module Pulseaudio pour faire du son à travers FreeRDS.
+<!-- TEASER_END -->
+
+# Architecture
+
+J'ai fait une sortie son (sink) pulseaudio qui sort le son en RDP à travers le channel FreeRDS
+correspondant.
+Les tâches du modules sont relativement simples:
+
+* initialiser le bouzin;
+* se connecter sur le channel en utilisant l'émulation de [l'API WTS][wtsAPI] fournie par
+FreeRDS;
+* négocier avec le client RDP à l'autre bout (qualité de son, sampling, codec, etc...) en parlant
+le "sound channel" protocole;
+* créer la sortie son dans PulseAudio, et envoyer les octets de son que nous envoie PulseAudio
+dans le channel RDP, au bon format.
+
+L'implémentation server-side du channel de son existe déjà dans FreeRDP, il suffit de
+s'en servir correctement. Au passage, j'ai modifié ce composant, il y a quelques mois, pour
+que le thread du channel soit optionnel, vous allez tout de suite comprendre pourquoi. 
+
+Dans pulseaudio, le modèle de threads est le suivant:
+
+<img src='http://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/Developer/Threading/PulseThreads.png'>
+
+
+
+C'est une architecture avec des *eventloop* (boucles évènementielles), on a la *mainLoop* qui traite un peu tout
+et une *IO loop* par sortie (et par entrée) qui se charge de traiter le flux associé. Les *eventloop* peuvent se parler à travers
+des *eventqueues* qui sont des structures lock-free pour se passer des messages. 
+
+# FreeRDS sink
+Pour nous, le gros du boulot va être de réussir à faire parler ces deux *eventloop*: 
+
+<img src='/images/freerds-sink-sequence.png' class='aligncenter'>
+
+
+Au moment où on veux créer la sortie pour faire du son, on va:
+
+* créer le contexte FreeRDP pour le channel de son serveur-side;
+* demander à la mainLoop de poller le file descriptor du channel. Ceci va permettre de
+jouer la négociation des paramètres du channel (type de codec, rate, sampling, etc...) dans
+la *mainLoop*. Ces opérations sont faites dans la *mainLoop*, car quand on créé une sortie on doit directement donner
+les caractéristiques de format du son. Donc on ne peut pas créer la sortie et puis 
+attendre que la négociation sur le channel soit terminée;
+* on arrive alors à un moment critique où on a créé la sortie (sink) avec son *IO loop* associée,
+et puis on va enlever la gestion du channel de la *mainLoop*, et "passer" le descripteur de 
+fichier à l'IO loop de la sortie. C'est celui-ci qui va s'occuper de la communication avec le channel
+dans le suite: que ce soit pour envoyer des samples de sons ou bien gérer les retours (ack) du client.
+
+
+Je me suis beaucoup inspiré des sinks existants pour obtenir quelque chose de fonctionnel. Je n'en
+ai pas encore parlé, mais le démarrage du son est aussi guidé par une notification *DBus* qui
+va nous indiquer qu'une session vient de se connecter. Donc on a aussi une communication *DBus*
+qui est gérée dans la *main loop*, et qui créée la sortie au bon moment.
+
+# Perspectives et liens
+
+Pour l'instant, je ne gère pas tellement de formats de son. Il serait sans doute possible
+de faire matcher plus de format RDP. 
+
+
+Sur le même modèle, il faudrait créer une source qui permettrait d'utiliser le micro
+de l'hôte distant.
+
+
+Si vous voulez explorer le sujet quelques liens:
+
+* les [pages de développement](http://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/Developer/) sur le wiki de PulseAudio;
+* les [spécifications](https://msdn.microsoft.com/en-us/library/cc240933.aspx) du channel son; 
+
+
+
+[lennart]: http://fr.wikipedia.org/wiki/Lennart_Poettering
+[wtsAPI]: https://msdn.microsoft.com/en-us/library/aa383464%28v=vs.85%29.aspx?f=255&MSPPError=-2147217396

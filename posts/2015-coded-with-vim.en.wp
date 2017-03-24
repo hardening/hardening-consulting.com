@@ -1,0 +1,229 @@
+<img class="alignright" alt="code" width="100px" src="/images/binary.jpg"> 
+Teasing title for a post on development methods or more specifically coding tools. But we'll see that
+the two are linked.
+
+My story begins at the XDC 2014, a few places in front of me I could see a venerable
+developer who was live coding. He was working on Xorg, I could see him use _vi_ or _vim_,
+do some changes, compile, run Xorg which was crashing or not, and loop this workflow.
+I have already worked in Xorg, so I was thinking myself "Wow he codes with _vim_".
+
+It was a "Wow" meaning: respect and... Oh my god !!!
+
+<!-- TEASER_END -->
+
+With such a teaser, I can hear the geek, defending the holy Unix philosophy coming. So
+if you're in that case, please read the complete article before commenting "_vim_ is by far
+the best tool to code". 
+
+
+
+# Text editor versus IDE
+
+## Text editors
+<img class="alignright" alt="Vim" width="100px" src="/images/vim-logo.png">
+I was talking of _vim_ but the same apply for _vi_, _ed_, _xemacs_, _gedit_, _kate_.
+All these are only text editors:
+
+* they allow to edit text file more or less easily (the command mode of vi is a challenge
+to intuition if you think about it !);
+* in the best case they can do code highlighting and you have nice colors;
+* you can do some advanced text manipulation with them (killer substitutions in vi), but
+it's only some raw text manipulation;
+* most of the time they are very resource light;
+* they are minimalist and run in terminal mode (graphical is for windows users),
+ most of the time the graphical mode version doesn't add significant functionalities, except a
+ bigger (and nicer) window. 
+
+As one of my university professor was saying (so twenty years from today) "nothing we weren't doing 20 years ago".
+And for sure an actual _vim_ should run perfectly fine on a computosaure.
+
+
+
+## IDEs
+<img class="alignright" alt="eclipse" width="100px" src="/images/eclipse-logo.jpg">
+Then comes the IDEs, for _Integrated Development Environment_, now we have tools that
+are specifically designed for coding, not to edit a text file, but really to assist you
+during the coding process.
+Of course they can do the same kind of thing than text editors. Except the crazy _vim_
+replacements they are capable of the same tasks. Anyway who uses on the day to day (I mean more than once a
+day) the advanced replacements of _vi_ ? 
+
+Unfortunately the IDEs have received a lot of marketing attention, sometime with the software
+editors pretending that the tool was coding in place of the software engineer. There's some bosses that
+have been stupid enough to believe it, and some developers that have been grown with IDEs and
+that can't do anything except what the IDE does. But if you go beyond the marketing polish
+you will see some _real good tools(TM)_. 
+
+With an IDE, you have a tool that understand the code. When coding in C++ in the _Eclipse_
+CDT, the IDE understand the language structures, it can do coding assistance. The code
+indents correctly, you have completion, the IDE also notifies for common errors:
+forgotten break in switch statement, uninitialized class member in a constructor, or
+in a different order.
+
+It's now that the UNIX geek tells you:
+
+```console
+	but when I launch eclipse it eats plenty of memory when vi is super light.
+``` 
+
+True, but we're not talking of the same kind of tool (BTW why do you need free/used memory ?), an IDE
+does a lot more things than a simple (trivial?) text editor. An IDE is a war tool for working
+code, a text editor remains a pocket knife. Even with a large blade, a pocket knife remains a 
+pocket knife.
+
+
+# Code refactoring
+<img class="alignright" alt="Mister proper" width="100px" src="/images/mrproper.png">
+
+I read that the time to write the code is 20% while the maintenance and evolutions is 80%. So
+the refactoring is a critical item in the software's life.
+
+What about refactoring when you use _vim_. How do I rename a _size_ field of a struct
+to _length_ ? Usually you will grep for _size_, but as it's quite a common name for
+parameters and variables you will have a lot of false positives. So you will have a error prone
+renaming, everything will rely on the human to perform this big change. Not even talking of
+motivation after performing that awkward task.
+
+The consequence is that the renaming won't be done, or that a developer will loose
+his time doing it. With an IDE that understand code structures, renaming is a common operation
+and of course it's the IDE that does all the job.   
+
+
+# Exploring the code
+<img class="alignright" alt="explore" width="100px" src="/images/explore.jpg">
+
+Sometime I have impress some coders: I had just checkout from git their beloved project, the
+code they knew by heart, and I was talking of the code as if I knew it very well. Of course
+there's my experience (my secret: all programs are done the same way), but the magic is
+somewhere else.  
+ 
+When you're exploring the code using _vim_, getting familiar with the project is done
+by reading a lot of code. Then when you have accumulated some knowledge you will
+be more agile with the program and you will be able to start working on it.
+
+An IDE will help you with this task, two tools help a lot: the call hierarchy and the
+reference tool.
+
+With call hierarchy, you can see where a function is called, how the callers prepare the
+arguments... With _vim_ you will need to _grep_, open the file and go to the right line.
+A lot of steps that lead to the fact that you will not remember what you were searching for.
+
+The reference tracker allows to know where a variable or a struct field is used. Typical
+example: a field is read in the application's configuration file, you look which part of the code
+writes in that field and you will quickly find the parsing code. Looking where a function is called
+or how is used a variables often let you know what's its exact role.  
+
+These tools also allow you to estimate the size and risk of a refactoring. A function used in
+many places could be more risky to change. The IDE doesn't remove the need to know your codebase
+but really helps a lot.
+
+
+
+# Implication on code style rules
+
+In fact the use of _vim_ or _eclipse_ on a project has more consequences than it seems.
+
+Often in a project some coding rules are set up, this is code style and good practices rules.
+It's a lot a matter of affinities in the choice of these rules, and trying to argument on these quickly
+looks like entering a bar and claiming "my football team is the best, try to prove me wrong".
+Anyway, often the chosen rules denotes the tool that is used to work on the code, even
+if it has been forgotten.
+
+For example, that kind of code style:
+
+``` C 
+static void 
+myFunction()
+{
+	if (val)
+	{
+		do_treatment();
+	}
+}
+```
+
+We can see that probably it's with a text editor that can't highlight code blocks,
+so we artificially align curly braces to visually have that information. 
+
+To quickly identify the function's return type, a line is "lost" to hold it on a
+separate line. 
+
+The curly braces are forced for single line statements, to prevent the following error: 
+
+``` C 
+	if (val)
+		do_treatment();
+		do_other_treatment();
+```
+
+But in fact with any IDE:
+
+* you have block highlighting, no need to loose a line with a curly brace to highlight
+blocks. You even have a function explorer on the whole project, that allows to quickly go to that 
+function;
+* the IDE knows the function's return type, so no need to dedicate a line for this;
+* the code is always nicely formatted, so you never hit the case with the _if_ and two
+misaligned instructions;
+
+
+At the end, we could have that kind of code style:
+``` C 
+static void myFunction() {
+	if (val)
+		do_treatment();
+}
+```
+
+
+There's also the strict limitations on the number of characters per line, in _Wayland_, for 
+example it's 80. This can lead to some ridiculous things, especially when any terminal
+can print at least twice more on any screen:
+
+``` C 
+if (!wl_list_empty(&i->request_list))
+	printf("\t%d, %s_requests,\n",
+	       wl_list_length(&i->request_list), i->name);
+else
+	printf("\t0, NULL,\n");
+
+if (!wl_list_empty(&i->event_list))
+	printf("\t%d, %s_events,\n",
+	       wl_list_length(&i->event_list), i->name);
+else
+	printf("\t0, NULL,\n");
+```
+
+And all this for the comfort of the _vim_ users that edit code in a 80 columns terminal !
+
+So we can see that the editing tools influences the style of the code. It's even quite
+usual that some coding style that are _vim_ adapted, are adopted by coders that code under
+_Eclipse_. It's done this way because other projects do it that way, or because someone read
+that it was cool to do this way (looks professional ;) ).
+
+Not even talking of Microsoft coding conventions from another age, where the name of the
+variable contains an indication on its type: it makes ugly variable names and one can
+question the utility of this. Anyway you will still find preachers for these.
+
+
+# Give a try to the power of the dark side
+
+<img class="alignright" alt="Dark vador" width="150px" src="/images/vador.png">
+
+Of course the point of this post is not to deny _vim_ and the others. Most of the big
+opensource softwares have been coded with _vim_ and myself I'm using it from time to time.
+Anyway, I think that coders that only use _vim_ should give a try to an IDE for 2 weeks, just
+the time to be comfortable with it and to test the power that you get with such a tool.
+_Eclipse_, for an experimented C/C++ coder, quickly becomes a war weapon, you are really
+more effective with an IDE. When you have tested the power of an IDE, it's really hard to do the way
+back with _vim_.
+ 
+So give it a try !
+
+
+Last time note: I have just tested the linux version of MS VisualStudio. Unfortunately you have
+to read the help to find out the keyboard shortcuts for the IDE oriented features: references,
+renaming, ... I haven't done some extensive tests but it looks far from _Eclipse_, at least the
+IDE functions aren't pushed on the front.
+
+
+[VS]: https://code.visualstudio.com/Download 

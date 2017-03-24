@@ -1,0 +1,158 @@
+<img class='alignright' src='/images/rdc-icon.png' width='100px'>
+
+Un petit billet suite à mes aventures récentes autour du multi-écran dans _firerds_ (donc coté serveur).
+Sur le papier celà semblait relativement simple, une petite balade de santé. Mais comme souvent avec RDP
+j'ai eu plein de surprises, mauvaises évidement ;)
+
+
+# Expérimenter le multi-écran
+
+Pour commencer, il faut une plate-forme de test. Le plus simple, c'est de mettre deux écrans
+sur un PC et de lancer un _xfreerdp_:
+
+```console
+# xfreerdp /v:myserver /multimon /f
+```
+<!-- TEASER_END -->
+Mais comme c'est coté serveur, il est aussi intéressant de tester avec le client officiel, notre
+brave _mstsc_ et ses nombreuses versions. De la même manière, on peut mettre 2 écrans sur
+une machine physique tournant sous windows, mais chez moi les windows sont plutôt sur 
+des machines virtuelles. En cherchant un peu sur le net, j'ai trouvé comment simuler plusieurs
+écrans avec QEMU/KVM: on configure un affichage SPICE, puis on va mettre autant de cartes vidéos en mode QXL qu'on
+souhaite d'écrans. L'astuce consiste ensuite à se connecter à la machine virtuelle
+en utilisant _remote-viewer_ (et pas l'affichage de _virt-manager_):
+
+```console
+# remote-viewer spice://127.0.0.1:5902
+```
+
+Au lancement de _remote-viewer_, on va avoir autant de fenêtres que de moniteurs, ce qui est vraiment
+très pratique.
+
+<img class='aligncenter' src='/images/spice-multimonitor.png'><br style='clear: both'/>
+
+
+# Le multi-écran au niveau du protocole
+
+Maintenant qu'on peut tester, voyons un peu comment ce qui change au niveau du protocole
+RDP quand on a plusieurs écrans.
+
+
+Tout d'abord la géométrie des écrans est envoyée par le client dans le paquet [GCC][gcc] (_MCS connect request_) au
+tout début de la négociation. Ce paquet contient les coordonnées des 4 coins de l'écrans, ce qui permet
+d'avoir leur positionnements relatifs les uns par rapport aux autres, ainsi que leurs tailles.
+
+<img class='aligncenter' src='/images/rdp-gcc.png'><br style='clear:both'/>
+
+
+
+Le serveur répond avec le paquet optionnel [Server Monitor Layout PDU][monitorLayoutPdu], qui contient les écrans vus par 
+le serveur. Nous verrons dans la suite que ce paquet n'est pas du tout optionnel si on
+veut que le client fasse du multi-écran correctement. On notera que ce paquet n'est censé être envoyé
+que si le client a annoncé qu'il supportait ce PDU dans le [earlyCapabilityFlags][earlyCapabilities].
+
+<img class='aligncenter' src='/images/rdp-monitor-layout.png'><br style='clear:both'/>
+
+
+# En pratique
+
+## Les backends
+
+Le plus compliqué semblait être le portage des backend firerds au multi-écran.
+Effectivement quasiment tous nos backend prenaient l'hypothèse d'un seul écran avec tous
+les pré-supposés et raccourcis qui vont avec. Une bonne quantité de travail a donc été nécessaire
+pour faire les modifications nécessaires de ce coté.
+
+Heureusement que ce soit du coté de Qt ou de X11, le support multi-écran était existant dans ces logiciels,
+il ne s'agissait que d'interagir correctement avec. Connaitre la position des écrans permets par exemple
+de maximiser une fenêtre seulement sur un écran, ou bien de la faire apparaître au milieu de l'écran plutôt
+qu'à cheval sur 2 écrans (parce que ce serait le milieu du tampon graphique).
+
+
+## Les clients RDP
+
+Durant mes premiers tests j'ai utilisé _xfreerdp_ et tout a fonctionné parfaitement. Enfin plus exactement j'ai
+modifié les backends en utilisant xfreerdp comme client et j'ai réussi à obtenir quelque chose de parfaitement fonctionnel.
+
+
+Mais évidement les soucis sont arrivés avec _mstsc_. Premièrement il se présente sur
+le serveur en annonçant une _DesktopWidth / DesktopHeight_ correspondant à celles de l'écran
+principal et pas celle de la boite englobante de tous les écrans. Et puis avec lui le _Server Monitor Layout PDU_
+n'est pas du tout optionnel, c'est ce paquet qui semble être le signal du "passe en multi-écran".
+
+<img class='alignright' src='/images/screens-setup.png'>
+Pour corser le tout quand on est dans le schéma de droite, il peut aussi envoyer des coordonnées négatives pour le positionnement
+des écrans. En celà, il est en accord avec la spécification qui dit que l'écran principal devrait être
+en (0,0) et les autres donnés relativement à celui-ci. Le seul problème c'est que dans certaines configurations on a bien des écrans 
+avec des coordonnées négatives mais pas le principal en (0,0). 
+Dans notre exemple si l'écran 1 est l'écran principal, les écrans 2 et 3 devraient avoir des
+coordonnées origines négatives. Bien évidement on commence directement dans le cas difficile avec des écrans de tailles 
+différentes et placés bizarrement.
+<br style='clear:both;'/>
+
+Après les modifications qui vont bien:
+
+* faire une séquence de réactivation à la bonne taille;
+* gérer les coordonnées négatives pour les backends;
+
+ça fonctionnait.
+
+## Gérer le channel egfx
+Enfin ça fonctionnait quand le codec négocié était du remoteFx simple ou du planar
+codec, dés qu'on avait l'utilisation du channel _egfx_, le comportement était bizarre.
+Suivant les environnements de test, soit la fenêtre ne passait pas en plein écran et 
+on devrait se balader dans le desktop
+complet en utilisant les ascenseurs. Soit on avait le même cas lorsqu'on 
+basculait de plein écran à fenêtre (impossible de re-basculer en plein écran).
+
+Après bien des essais, j'ai mimiqué le client _mstsc_ en modifiant _sfreerdp_ (pour reproduire la configuration de _mstsc_) et en le faisant
+se connecter sur un serveur windows officiel. On apprend des choses intéressantes:
+
+* un serveur windows ne fait pas de séquence de réactivation vers la bonne taille quand il va utiliser le channel egfx,
+car dans le channel egfx on a un message [RDPGFX_RESET_GRAPHICS_PDU][resetGraphics] qui permet de préciser
+la taille du tampon graphique:
+
+<img src='/images/rdpgfx_reset_graphics_pdu.png' width='700px'>
+<br style='clear: both;'/>
+Comme on peut le voir le message contient la taille totale du tampon graphique, ainsi que
+la position et la taille des écrans.
+
+* dans le cas du multi-moniteur le serveur créé une surface par écran ([RDPGFX_CREATE_SURFACE_PDU][createSurface])
+plutôt qu'une grosse surface couvrant tout le desktop. Il semblerait que chaque surface ait
+un context de codec propre (par exemple pour H264);
+
+
+Un énorme travail a donc été nécessaire pour traiter la zone à repeindre par moniteur plutôt que globalement.
+Il a fallu:
+
+* découper la zone à repeindre par moniteur. J'ai rencontré des soucis avec l'alignement des coordonnées: les positions
+des moniteurs ne sont pas toujours alignées sur 64 ! 
+* Évidement toutes les coordonnées étaient données avec pour origine (0,0), l'origine du buffer graphique. Là elle doivent 
+être exprimées en fonction de la surface représentant un écran; 
+* ce traitement doit coexister avec le mode "normal" pour les modes n'utilisant pas egfx;
+* gérer les limites sur le nombre de moniteurs a demandé de presque intégralement ré-écrire le
+code qui gère les redimensionnement. En effet quand on est limité à 2 écrans et qu'on se présente
+avec 3, le comportement attendu est d'être restreint au seul écran principal en plein écran. Et mine
+de rien pour obtenir ça ce n'est pas si aisé;
+* je ne parle même pas du shadowing: quand un espion en multi-écran espionne une cible, on va lui
+enlever le multi-écran quand il espionne et lui restaurer à la sortie de la session d'assistance. Encore des cas tordus ! 
+
+
+# Conclusion
+
+Un projet qui a demandé bien plus de travail que prévu. À noter pour la suite:
+prendre une marge très confortable quand un client propriétaire est dans la boucle: on a toujours
+de mauvaises surprises.
+
+Il reste encore du travail car dans l'implémentation actuelle nous avons décidé qu'en
+mode multi-écrans, nous ne ferions pas tout de suite de H264. Celà demanderait
+une bonne quantité de modification pour avoir un contexte par surface (sans compter que
+le H264 c'est moche pour un desktop).
+
+
+
+[gcc]: https://msdn.microsoft.com/en-us/library/dd305336.aspx
+[earlyCapabilities]: https://msdn.microsoft.com/en-us/library/cc240510.aspx
+[monitorLayoutPdu]: https://msdn.microsoft.com/en-us/library/dd341197.aspx
+[resetGraphics]: https://msdn.microsoft.com/en-us/library/hh537049.aspx
+[createSurface]: https://msdn.microsoft.com/en-us/library/hh536744.aspx

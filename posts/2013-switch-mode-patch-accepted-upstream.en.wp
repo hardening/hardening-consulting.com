@@ -1,0 +1,15 @@
+<html><body><a href="/wp-content/uploads/2013/09/wayland.png"><img class=" wp-image-71 alignright" alt="wayland" src="/wp-content/uploads/2013/09/wayland.png" width="82" height="105"></a>That's one month I'm working on a patch to fix the weston_switch_mode() function in weston, the reference wayland compositor. I didn't spend a month on that piece of code, but a few hours splitted over the last month. I had many discutions on IRC, worked on it, had comments on my patches, and finally the code should land in wayland/weston 1.3.
+
+
+The commits:
+
+<ul>
+	<li>The <a href="http://cgit.freedesktop.org/wayland/weston/commit/?id=ff39efa5c01eb51daf73593cd7a39cc3fac6d48e" target="_blank">first</a> one does massive renaming.</li>
+	<li>The <a href="http://cgit.freedesktop.org/wayland/weston/commit/?id=57388e44e5a8ddd01f44602d5d24514977f21bd1" target="_blank">second</a> one does the job</li>
+</ul>
+
+So now when a RDP client connects on the RDP compositor and its resolution does not match the desktop resolution, it's the desktop that adjust its size and no more the client.
+
+
+
+ </body></html>

@@ -1,0 +1,141 @@
+<img class='alignright' src='/images/drone.png' width='100px'>
+
+Looking at my Piwik stats I've seen some interest with my previous [DJI Phantom 3 posts][unboxing]. 
+I've also seen a [guy][pc ground] that has quite the same goal as me: 
+writing a PC-based ground station software to drive a phantom 3. 
+
+So I guess it's time to speak of my discoveries regarding the protocol that is spoken
+between the remote controller, the camera, the mobile app and the drone.
+
+# Protocol basics
+
+## Header
+
+First the packets are split in two parts: a header and a payload.
+
+The header has the following format:
+
+```
+-------------------------------------------------------------------------
+| 0 0 0 0 0 0 0 0 | 0 0 1 1 1 1 1 1 | 1 1 1 1 2 2 2 2 | 2 2 2 2 2 2 3 3 |
+| 0 1 2 3 4 5 6 7 | 8 9 0 1 2 3 4 5 | 6 7 8 9 0 1 2 3 | 4 5 6 7 8 9 0 1 |
+|-----------------------------------------------------------------------|
+|  magic - 0x55   |    payload length    |  version   |     crc8        |
+-------------------------------------------------------------------------
+```
+
+There's the 0x55 magic on 1 byte. Followed by a _lenVer_ field on 2 bytes, it contains
+length of the payload and version of the protocol in the 6 upper bits. And then you have    
+a custom _crc8_ of the first 3 bytes.
+
+
+The payload size is limited to 4096 bytes.
+As magic and protocol version never change, you can notice that only the size of the
+payload influence the crc8. So you can have a table that list some lengths and give the 
+expected crc8 result.
+
+The crc8 is there to be sure we have a header and that we may read the payload (well we
+can't be _sure_ as it's just a crc8 but at least it give a good level of confidence).
+
+<!-- TEASER_END -->
+
+## Payload
+
+The payload is ended by a _crc16_ of the payload, to have some confidence on the payload integrity.
+It's a custom DJI _crc16_ that I've talked of in a previous [post][reverse].
+
+The algorithm to read a packet is basically:
+```text
+1. find a 0x55 byte, read header;
+2. check the crc8 to be sure that the payload length is a sane value;
+3. read the payload and compute the crc16;
+4. if the crc16 is correct, interpret the payload and skip these bytes, otherwise skip the header bytes and goto step 1
+```
+
+So a packet is valid if both the _crc8_ on the header and the _crc16_ on the payload are correct, that
+gives quite a good confidence on the message integrity.
+
+# Payload explained
+
+The payload has the following format:
+```
+-------------------------------------------------------------------------
+| 0 0 0 0 0 0 0 0 | 0 0 1 1 1 1 1 1 | 1 1 1 1 2 2 2 2 | 2 2 2 2 2 2 3 3 |
+| 0 1 2 3 4 5 6 7 | 8 9 0 1 2 3 4 5 | 6 7 8 9 0 1 2 3 | 4 5 6 7 8 9 0 1 |
+|-----------------------------------------------------------------------|
+|   main   | sub  |   main   |  sub |                                   |
+|  sourceType     |    targetType   |         sequence number           |
+|-----------------------------------------------------------------------|
+| ?????|   |???|R |                 |                 |                 |
+|    flags        |    cmdSetId     |  commandId      | optionnal byte  |
+-------------------------------------------------------------------------
+```
+
+_sourceType_ contains the source source of the message, this field contains
+a main type in the 5 lower bits and a subType in the 3 upper bits.
+
+_targetType_ has the same format for the target of the message.
+
+Possible value for main types are:
+```text
+0x00: WHO
+0x01: CAMERA
+0x02: the mobile application
+0x03: the fly controller
+0x04: the gimbal, 
+0x05: CENTER
+0x06: the remote controller
+0x07: the WIFI part
+0x08: DM368
+0x09: OFDM
+0x0a: PC 
+0x0b: BATTERY
+```
+There's others that I've never seen for real.
+
+_sequence number_ is an increasing sequence number, from my research it is kinda contextual (so you
+have different sequence counters).
+
+In _flags_, _R_ means that this message is a response to a request.
+
+_cmdSetId_ contains the kind of the command set and _commandId_ contains the command number.
+
+From my research the command sets are the following:
+```text
+0x00: a general command set that is for getting the version, setting dates, pinging, retrieving
+some device info;
+0x01: special command set, I feel like it's for doing firmware updates;
+0x02: the camera command set, to set camera modes and settings;
+0x03: the fly controller command set. Status of the battery, motors, setting fly forbid areas, ...
+0x04: gimbal command set;
+0x05: battery command set. Retrieving the history log and features of the battery;
+0x06: remote controller command set;
+0x07: wifi command set. Wifi signal status, getting and setting SSID;
+0x08: DM368 command set.
+0x09: OSD command set. 
+```
+The last byte of the packet is optionnal, only in the response packets and is not always present (depends of the
+command and commandSet).
+
+The messages are either on a request / answer schema or just a pull schema. Most of the exchanged messages are of the
+pull type (drone or remote controller flooding the mobile app with messages). 
+The protocol is not self describing, so both peer know if the optionnal byte is present or not depending of the command set
+and command id. 
+
+Example of pull messages:
+
+* the remoteController sending the positions of the sticks and buttons and battery levels;
+* the drone sending a status packet containing the position of the drone, the number
+of GPS, the battery level, ...
+
+Of course you have tons of commands. 
+
+# To conclude
+
+From my research other DJI aircrafts have quite the same spirit for their protocol.
+I've not tested with phantom 4 but if you wish to send me one, I'd be more than happy
+to see the differences ;)
+
+[unboxing]: /en/posts/20160818-playing-with-DJI-phantom-3.html
+[pc ground]: http://pseudodeterminism.blogspot.fr/2017/01/monitoring-telemetry-for-dji-phantom-3.html
+[reverse]: /en/posts/20161115-reverse-engineering-an-android-app.html

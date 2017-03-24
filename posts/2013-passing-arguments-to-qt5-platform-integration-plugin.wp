@@ -1,0 +1,46 @@
+<img class="alignright" alt="qt5" src="/wp-content/uploads/2013/09/qt5-300x199.jpg" width="180" height="119">
+
+Alors les plus grognons me diront:
+<blockquote>mais c'est quoi ton platform integration bidule là....</blockquote>
+
+Alors un platform integration plugin, c'est le plugin qui permet de s'occuper d'une 
+partie de du matériel sous Qt, ça permet entre autre de gérer la partie graphique (<em>xcb</em>, 
+<em>x11</em>, <em>wayland</em>) ou encore les méthodes d'entrée (heu là joker pour cette partie).
+
+
+Donc on a fait notre magnifique code de platform integration plugin, ça ressemble à ça:
+
+```c++
+class QFreeRdpIntegration : public QPlatformIntegration
+{
+public:
+    QFreeRdpIntegration(const QStringList &paramList);
+    ~QFreeRdpIntegration();
+/** bla bla bla reste de la class */
+
+};
+```
+
+On peut s'en servir avec une application en faisant un savant:
+
+```console
+# mon_application -platform <nom de mon plugin>
+```
+
+
+C'est super. En regardant de plus près, on se dit que <em>paramList</em> serait vraiment très appétissant, 
+pour passer des paramètres au plugin (vu le nom). Seulement voilà, la doc est plutôt muette à son sujet. 
+On sait que c'est la liste des paramètres par contre pour savoir comment les passer à l'application.... Mystère !
+
+
+
+Après une bonne heure de recherche sur internet sur d'obscures mailing list Qt4 mobile (oui oui Qt4), 
+je trouve l'incantation qui permet de lancer le sort:
+
+```console
+# monapplication -platform <nom de mon plugin>:param1:param2
+```
+
+Et on récupère <em>param1</em>, <em>param2</em> dans le tableau <em>paramList</em>, c'est magique.
+
+Elle est pas belle la vie ?

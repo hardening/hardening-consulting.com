@@ -1,0 +1,27 @@
+<img class="alignright" alt="qt5" src="/wp-content/uploads/2013/09/qt5-300x199.jpg" width="180" height="119">
+
+I've worked recently with my qfreerdp_platform plugin, and I've added some code to set the width or 
+the height of the emulated screen as plugin arguments.
+
+The code looks like that:
+
+```c++
+class QFreeRdpIntegration : public QPlatformIntegration {
+public:
+    QFreeRdpIntegration(const QStringList&amp; paramList);
+    ~QFreeRdpIntegration();
+
+   /** ..... */
+}
+```
+
+Then a trivial question came to me: how do I pass the plugin arguments ? Obviously 
+the parameters will end in <em>paramList</em> but what's the name of the command line argument ?
+
+After an hour of googling and searches in obscure Qt4 forum, the solution:
+
+```console
+# myapp -platform plugin:arg1:arg2:...
+```
+
+Hope it helped.

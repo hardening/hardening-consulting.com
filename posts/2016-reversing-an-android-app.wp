@@ -1,0 +1,280 @@
+<img class='alignright' src='/images/binary.jpg' width='100px'>
+
+Je n'avais jamais regardé du coté d'Android, mais suite à l'achat du drone et de l'analyse
+de la capture, j'ai dû mettre les mains dans le cambouis et regarder un peu comment
+était faite l'application de DJI. Cet article va permettre de faire une introduction
+aux techniques de reverse d'applications Android.
+<!-- TEASER_END -->
+
+Disclaimer: ce n'est qu'un reverse amateur, rien de professionnel ;)
+
+# De l'application au code brut
+## Récupérer l'APK
+
+Première étape: récupérer le fichier APK de l'application. 
+Comme l'application DJI n'est pas payante j'aurais pu la récupérer sur des sites
+qui proposent de caches d'applications Android (google est ton ami pour trouver
+ton site préféré). 
+
+Sinon on utilise adb, pour lister les applications, récupérer le chemin de celle qui nous intéresse,
+et la copier en local:
+
+```shell
+adb shell pm list packages
+...
+adb shell pm path com.example.someapp
+...
+adb pull /data/app/com.example.someapp-2.apk path/to/desired/destination
+```
+ 
+
+## Du bytecode au code
+
+A partir de l'APK (qui n'est qu'un fichier zip), on récupère le code en DEX, on le passe à _dex2jar_ pour récupérer du bytecode
+Java. Ensuite on va passer un décompileur de bytecode, j'ai fait mes premières tentatives avec 
+le vénérable [jd-gui][jd-gui], mais malheureusement j'ai eu beaucoup de classes qui n'avaient comme code que:
+
+```java
+// INTERNAL ERROR
+```
+
+Et évidement c'était celles-là qui semblaient intéressantes vu leur nom. Il me semble que _jd-gui_ a vraiment
+du mal avec les enums. 
+J'ai donc essayé [luyten][luyten] qui m'a tout décompilé à peu près sans problèmes.
+
+Petite spécificité sous Android: si le jar a plus de 65535 symboles, le code est découpé en deux fichiers 
+_classes.dex_ et _classes2.dex_. Donc au moment de décompiler, il ne faut pas oublier de fusionner les 2 
+jars obtenus, sinon on se retrouve avec une décompilation incomplètes. 
+J'en ai fait l'expérience avec notamment une partie des inner-classes qui étaient manquantes dans le code généré.
+Évidement, on ne s'en rend compte qu'après avoir bien travaillé le reverse-engineering.
+
+Une fois le code en main, il n'y a plus qu'à y aller et regarder tout ça. 
+
+# Montre moi comment c'est à l'intérieur
+
+<img class='alignright' src='/images/loupe.gif' width='100px'>
+## Premières investigations
+
+Premières constatations: le code est partiellement obfusqué, certaines classes qui ont l'air d'être 
+plus ou moins publiques ne le sont pas.
+
+L'application DJI a du code Java et aussi du code natif à la plateforme. Le truc bien c'est
+que le code natif est sous forme de libraries, et le binding Java fait que le nom des symboles de
+fonctions natives contiennent le prototype de la fonction. En gros, en regardant le nom du symbole et
+ses arguments, on a une bonne idée de ce que fait le code. Le truc sympa c'est aussi que ça empêche 
+l'obfuscateur de renommer les classes référençant ces méthodes natives. Par exemple:
+```java
+_Z18jCalcChecksumCrc16P7_JNIEnvP8_jobjectP11_jbyteArrayi
+```
+à voir comme
+```java
+jCalcChecksumCrc16(_JNIEnv *, _jobject *, _jbyteArray, int)
+```
+
+Ça tombe bien, c'est précisément l'implementation de CRC16 qui m'intéresse. La version gratuite
+d'IDA ne fait pas l'ARM et il faut avoir une version bien chère pour un IDA qui décortique de l'ARM.
+J'ai donc fait des essais en utilisant des décompilateurs en ligne. J'ai essayé [ODA][ODA], il marche pas mal mais
+ne fait que décompiler, et je débute en ARM...
+[Retdec][retdec] fait pareil mais génère du C en plus, ce qui m'a bien aidé.
+
+Petite appartée: le désassemblage m'a donné la valeur d'initialisation du calcul de CRC.
+J'ai fait des essais de tous les polynômes pour calculer des CRC16 suivant
+la méthode standard et aucun ne matchait mon jeu de données. Soit je me suis trompé en faisant
+mes tests, soit c'est chez DJI qu'ils se sont trompés dans leur lookup table et en fait la
+méthode ne calcule pas vraiment une CRC16. Étant donné que la valeur d'initialisation ne
+correspond à aucune CRC16 connue, on peut imaginer que c'est chez eux.
+
+
+<img class='alignright' src='/images/tablette.jpeg' width='100px'>
+# Debugguer sur une tablette
+
+## Le bon hacker il voit sa tablette, il la roote, alors que le mauvais hacker, ben...
+
+Débutant en assembleur ARM, pas facile de voir exactement ce que fait le code. J'en avais
+une idée globale, mais le diable est dans les détails. Je voulais
+faire tourner ça dans un gdb pour voir ce qu'il se passait en mode pas à pas. Et c'est là
+que commence la galère. Il fallait donc que sur la tablette, je puisse m'attacher avec un _gdbserver_
+au process de l'application de pilotage, mettre mes breakpoints et faire tourner le code
+en pas à pas.
+
+Mais pour faire ça, il faut être root, et pour être root et bien... On ne peut pas, en standard du moins ! 
+Bienvenu(e) dans le monde où on achète un équipement mais on n'est pas vraiment libre de faire
+ce qu'on faire avec. Donc il faut rooter sa tablette en se mettant en indélicatesse avec la garantie.
+Histoire que ce ne soit pas trop facile, j'étais dans le cas où il n'y a pas d'exploit connu pour
+ma tablette, donc ça a été la méthode bourrin où on agit dés le bootloader. J'avoue que j'ai fais les
+manipulations en me disant que j'allais finir avec un code de _crc16_ qui resterait une énigme et une tablette
+brickée. Mais tout à fonctionné comme attendu, et j'ai pu enfin faire du gdb sur
+l'application qui fonctionnait, et comprendre le code de la crc16. 
+
+
+Le truc un peu ballot, c'est que le code était déjà [disponible en ligne][crc16]. Mais cela m'a permis de
+valider qu'il s'agissait du même calcul, et de savoir sur quelle partie du paquet
+la CRC était calculée. Et puis à vaincre sans péril, on triomphe sans gloire.
+ 
+
+
+
+## Les applications bien designées sont les plus faciles à reverser
+
+L'obfuscation complique clairement le travail de reverse, quand on a vu 5 fois _a_ dans
+une fonction et que c'est tour à tour une variable locale, un nom de classe, le nom d'un
+champ dans plusieurs classes, c'est compliqué de travailler, même Eclipse ou Netbeans ont du mal
+à y retrouver leur latin^WJava !
+
+Par contre, quand un programme est bien designé et qu'on est dans un cas
+droit la plupart du temps, les structures apparaissent assez rapidement. C'est bête à dire
+mais les programmes cochons sont clairement les mieux protégés après le passage de l'obfuscation.
+
+
+## Des octets réseau à leur signification 
+
+Dans mon exemple de reverse, il est parfois difficile de savoir à quoi correspondent les octets qui
+sont extraits des packets venant du réseau. La classe qui fait l'extraction a des champs
+obfusqués:
+
+```java
+    public ConnStatus m() {
+        return ConnStatus.ofData(this.<Integer>get(34, 1, Integer.class));
+    }
+
+	/* .... */
+
+	public enum ConnStatus
+    {
+        a(0), 
+        b(1), 
+        c(2), 
+        d(100);
+        
+        private int e;
+        
+        /* .... */
+    }
+```   
+
+On sait que _m()_ correspond à un octet à la position 34, mais difficile de connaitre
+sa signification. Étant donné le nom du type il s'agit d'un status, il est valué avec 0, 1, 2. 100 est la valeur retourné par l'enum
+quand il s'agit d'une valeur inconnue.
+
+Pour tenter de savoir à quoi celà correspond, on va regarder les appelants de cette fonction
+pour voir ce qu'ils en font. Dans l'idéal, l'application fait un affichage de ce champ et
+c'est donc trivial de savoir à quoi il correspond. On va aussi regarder qui se sert de la valeur _a_ de 
+l'enum. C'est l'avantage d'une enum en Java: c'est cette valeur symbolique qui est 
+référencée plutôt que 0, 1, 2 (là ce serait beaucoup plus compliqué de trouver les utilisateurs).
+
+Sous Netbeans (ou eclipse qui l'a aussi), on fait _Call Hierarchy_:
+<img class='aligncenter' src='/images/m_call_hierarchy.png''>
+<br style='clear:both;' />
+
+Et on tombe sur un des appelants qui nous renseigne un peu:
+```java
+    public void update(final DataCenterGetPushBatteryCommon dataCenterGetPushBatteryCommon) {
+        final long ak = this.ak;
+		final DataCenterGetPushBatteryCommon.ConnStatus m = dataCenterGetPushBatteryCommon.m();
+        boolean b = true;
+        if (DataOsdGetPushCommon.BatteryType.c != DataOsdGetPushCommon.getInstance().x()) {
+            b = false;
+        }
+        long n;
+        if ((m == DataCenterGetPushBatteryCommon.ConnStatus.b || m == DataCenterGetPushBatteryCommon.ConnStatus.c) && b) {
+            this.a(ak, DJIFpvTipView.r, "v2_battery_connect_error");
+            n = (DJIFpvTipView.r | ak);
+        }
+        else {
+            n = (~DJIFpvTipView.r & ak);
+        }
+        
+        /* .... */
+	}
+```
+
+Il semblerait que les valeur _b_ et _c_ de _ConnStatus_ soient des cas d'erreur. En regardant les utilisateurs de la
+valeur _a_ de l'enum, on trouve notamment cette fonction dans une classe qui semble donner
+l'historique de la batterie:
+
+```java 
+    private String a(final j j) {
+        String s = this.a;
+        if (j.a()) {
+            if (j.b()) {
+                final DataCenterGetPushBatteryCommon.ConnStatus c = j.c();
+                final String c2 = this.c;
+                if (c == DataCenterGetPushBatteryCommon.ConnStatus.b) {
+                    s = this.b;
+                } else {
+                    s = c2;
+                    if (c == DataCenterGetPushBatteryCommon.ConnStatus.c)
+                        return c2;
+                }
+```
+La chaîne _s_ est ensuite affichée dans l'interface. 
+
+Quand on regarde une des fonctions d'initialisation de la classe, on trouve ce code:
+ 
+```java 
+    this.a = c.getString(R.string.setting_ui_battery_history_normal_status);
+    this.b = c.getString(R.string.setting_ui_battery_history_invalid_status);
+    this.c = c.getString(R.string.setting_ui_battery_history_exception_status);
+``` 
+On voit donc tout à fait que la valeur _b_ correspond à _invalid_ et _c_ à _exception_.
+
+Après avoir demandé à NetBeans quelques renommages (Refactor -> rename, ou Ctrl+R)
+tout devient beaucoup plus clair:
+```java 
+	if (j.isErrorConnStatus()) {
+        final DataCenterGetPushBatteryCommon.ConnStatus status = j.getConnStatus();
+        final String c2 = this.exceptionStatus;
+        if (status == DataCenterGetPushBatteryCommon.ConnStatus.INVALID) {
+            s = this.invalidStatus;
+        }
+        else {
+            s = c2;
+            if (status == DataCenterGetPushBatteryCommon.ConnStatus.EXCEPTION) {
+                return c2;
+            }
+        }
+    }
+``` 
+
+Et pour les autres données du paquet, c'est du même tonneau. C'est un peu plus compliqué car on passe par une classe de médiation
+qui va interprêter les données du réseau pour en faire un bean d'affichage. Mais avec ces constantes chaînes
+très explicites, c'est assez facile de remonter la piste et de savoir à quoi correspond chaque valeur: 
+```java
+    this.d = c.getString(R.string.setting_ui_battery_history_firstlevel_current);
+    this.e = c.getString(R.string.setting_ui_battery_history_secondlevel_current);
+    this.f = c.getString(R.string.setting_ui_battery_history_firstlevel_over_temperature);
+    this.g = c.getString(R.string.setting_ui_battery_history_secondlevel_overt_temperature);
+    this.i = c.getString(R.string.setting_ui_battery_history_firstlevel_low_temperature);
+    this.j = c.getString(R.string.setting_ui_battery_history_secondlevel_low_temperature);
+    this.k = c.getString(R.string.setting_ui_battery_history_short_circuit);
+    this.l = c.getString(R.string.setting_ui_battery_history_under_voltage);
+    this.m = c.getString(R.string.setting_ui_battery_history_invalid);
+``` 
+
+Là encore, on voit que le design propre facilite le reverse engineering. Les appels de _getString()_ sont évidement là
+pour permettre l'internationalisation de l'application, mais ils nous aident beaucoup. 
+
+On est sans doute dans un mode où:
+
+* l'équipe de développement a passé le plugin d'obfuscation sans trop regarder dans les détails le résultat (peut-être
+suite à un audit où on bouche les rustines au plus vite);
+* le plugin d'obfuscation n'a sans doute pas été passé sur le code dés le début du projet, car sinon il est assez probable
+qu'on n'aurait pas tous ces appels par introspection qui oblige à ne pas obfusquer 
+une bonne quantité des classes;
+  
+
+# Conclusion
+
+Ce reverse est très intéressant et j'ai réussi à identifier la plupart des données clé.
+Je prépare un programme en python qui permettra de commander le drone à partir d'une
+application standalone sur un laptop. En passant, elle permettra de se passer
+des limitations de l'application officielle.
+
+La suite au prochain épisode...
+
+
+[jd-gui]: http://jd.benow.ca/
+[luyten]: https://github.com/deathmarine/Luyten
+[ODA]: https://www.onlinedisassembler.com/odaweb/
+[retdec]: https://retdec.com/
+[crc16]: https://github.com/dji-sdk/Guidance-SDK/blob/master/examples/uart_example/crc16.cpp

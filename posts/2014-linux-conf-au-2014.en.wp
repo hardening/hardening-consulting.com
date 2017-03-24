@@ -1,0 +1,27 @@
+<img class='alignright' src='/images/conference.jpg' width='150px'>
+
+The year has just began, but there have been linux.conf.au, a conference with interesting talks. 
+I like that one because a talk gave there make me have some interest for wayland a year ago.
+<!-- TEASER_END -->
+
+Here's some talk I have liked:
+
+* a [talk][dri3000] on DRI 3000 by Keith Packard: <em>zero copy compositing, research to reality</em>. 
+I find it funny that when you hack Xorg you always have the historical code that make things hard to change ;
+* I really like [Lennart Poettering][lennart], I think that guy have made things changed in the right way. 
+From my point of view, Pulseaudio and systemd are two major projects (even if you always have 
+grumpy people without any real argument against). In this [video][kdbus video], 
+he speaks about [kdbus][kdbus], a kerneland implementation of DBus. This looks like 
+a future troll, but as he's saying <em>in five years all major distributions will have it as a standard</em> ;
+* talking of systemd, I have also liked this [talk][systemd] on the 6 stages of systemd ;
+* finally there were this talk of David Airlie on [Virgil][virgil3d] a virtual GPU. The talk 
+material were not that great, the talk is very technical, but you may find it interesting anyway.
+
+
+[dri3000]: http://mirror.linux.org.au/linux.conf.au/2014/Thursday/96-Zero-Copy_CompositingResearch_to_Reality_-_Keith_Packard.mp4
+[lennart]: http://fr.wikipedia.org/wiki/Lennart_Poettering
+[kdbus video]: http://mirror.linux.org.au/linux.conf.au/2014/Friday/104-D-Bus_in_the_kernel_-_Lennart_Poettering.mp4
+[kdbus]: https://github.com/gregkh/kdbus
+[linuxfr]: http://linuxfr.org
+[systemd]: http://mirror.linux.org.au/linux.conf.au/2014/Monday/175-The_Six_Stages_of_systemd_-_Rodger_Donaldson.mp4
+[virgil3d]: http://mirror.linux.org.au/linux.conf.au/2014/Thursday/93-Virgil_A_virtual_3D_GPU_for_qemu_-_Dave_Airlie.mp4

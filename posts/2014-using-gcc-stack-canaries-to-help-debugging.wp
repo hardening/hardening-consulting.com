@@ -1,0 +1,5 @@
+<img class='alignright' src='/images/security-banner.jpg'>
+Je suis tombé sur ce petit [article][gcc canary] très intéressant: pour aider au debugging, 
+on peut activer la protection renforcée de la pile, une capacité disponible avec les derniers gcc.
+
+[gcc canary]: https://securityblog.redhat.com/2013/10/23/debugging-stack-protector-failures/

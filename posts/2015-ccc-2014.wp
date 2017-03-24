@@ -1,0 +1,42 @@
+<img class='alignright' src='/images/security-banner.jpg'>
+Déjà la fin de l'année 2014 et le début 2015. Bonne année 2015, meilleurs voeux
+pour cette nouvelle année, de la réussite dans les projets, #toussatoussa (même
+si en étant Charlie, elle commence pas terrible cette nouvelle année). 
+
+Enfin, qui dit fin de l'année, dit CCC, encore de bons talk cette année. 
+Parmi ceux qui ont retenu mon attention:
+
+<!-- TEASER_END -->
+
+
+
+* Celui sur le [hack des CPU][AMD SMU] AMD. Les processeurs AMD sont assistés dans leur
+tâche par des coprocesseurs et le talk décrit comment l'auteur à réussi à détourner
+un des coprocesseurs pour lui faire faire ce qu'il veut. Sympa, étonnant et flippant !
+* J'ai trouvé celle sur le [code pointer integrity][Code pointer integrity] intéressante.
+Ce qui est proposé m'a semblé assez théorique (les auteurs sont des
+universitaires), je me demande si leurs avancées seront vraiment adoptées par les compilateurs;
+* un [talk][Quantum computers] sur le Quantum computing. Très accessible et qui fait
+toucher du doigt ce qu'on peut en espérer. Un [autre][diamonds], très rigolo, sur l'utilisation
+des diamands pour faire des quBits;
+* Coté cryptographie: très bon [talk][Heartbleed] sur Heartbleed en vrai, avec les conséquences opérationnelles de 
+la faille chez cloudfare. J'ai bien aimé aussi cette [analyse][Bleichenbacher] d'implementations cryptographiques
+qui montre bien qu'on peut critiquer à l'infini OpenSSL mais qu'on trouve des trucs encore plus grave chez
+d'autres (JAVA dans ce cas);
+* bien aussi ce [hack][mac rom hack] des ROM des macs; 
+* récemment je me disais que les Do It Yourself de tous poils avaient dû faire des mini-fusées
+qu'ils faisaient décoller dans leur jardin. J'avais fait quelques recherches sur le net sans rien trouver,
+et en voyant cette [présentation][rockets] j'ai compris pourquoi;
+* pour finir un très intéressant [talk][Nuclear] sur la prolifération des armes nucléaire; 
+
+La Linux.conf.au est en cours, le programme a l'air sympa...  
+
+[AMD SMU]: http://media.ccc.de/browse/congress/2014/31c3_-_6103_-_en_-_saal_2_-_201412272145_-_amd_x86_smu_firmware_analysis_-_rudolf_marek.html
+[Code pointer integrity]: http://media.ccc.de/browse/congress/2014/31c3_-_6050_-_en_-_saal_g_-_201412272030_-_code_pointer_integrity_-_gannimo.html
+[Quantum computers]: http://media.ccc.de/browse/congress/2014/31c3_-_6261_-_en_-_saal_2_-_201412291245_-_let_s_build_a_quantum_computer_-_andreas_dewes.html
+[Heartbleed]: http://media.ccc.de/browse/congress/2014/31c3_-_6321_-_en_-_saal_1_-_201412282300_-_the_matter_of_heartbleed_-_zakir_durumeric.html
+[rockets]: http://media.ccc.de/browse/congress/2014/31c3_-_6180_-_en_-_saal_2_-_201412271830_-_rocket_science_how_hard_can_it_be_-_david_madlener.html
+[diamonds]: http://media.ccc.de/browse/congress/2014/31c3_-_6157_-_en_-_saal_6_-_201412301245_-_diamonds_are_a_quantum_computer_s_best_friend_-_nicolas_wohrl.html
+[mac rom hack]: http://media.ccc.de/browse/congress/2014/31c3_-_6128_-_en_-_saal_1_-_201412291830_-_thunderstrike_efi_bootkits_for_apple_macbooks_-_trammell_hudson.html
+[Bleichenbacher]: http://media.ccc.de/browse/congress/2014/31c3_-_5960_-_en_-_saal_2_-_201412271600_-_revisiting_ssl_tls_implementations_-_sebastian_schinzel.html
+[Nuclear]: http://media.ccc.de/browse/congress/2014/31c3_-_6121_-_en_-_saal_2_-_201412291715_-_what_ever_happened_to_nuclear_weapons_-_michael_buker.html

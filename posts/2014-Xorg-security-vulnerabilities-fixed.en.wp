@@ -1,0 +1,22 @@
+<img class='alignright' src='/images/security-banner.jpg'>
+At the beginning of the year, I have [talked][CCC 2014] of some CCC talks that I had liked.
+There were that [talk][Xorg security] on the _Xorg_ security: the fixes have been integrated 
+and official [announce][Official announce] done.
+
+<!-- TEASER_END -->
+
+One can be surprised that it took so much time to integrate all these changes. That's a lot
+of code, but on the other hand the fixes are just corner cases treatments... _Xorg_ has been written
+in times when the security was not a concern, that explain that vulnerabilities that are here for more
+than a decade. But when attending XDC 2014, I had the impression that
+improvements that you can see will make their way to repositories much more quickly than 
+security concerns.
+
+Also, some projects have copied'n past some part of the _Xorg_ code, so we can expect to
+have some of these vulnerabilities in other projects (it comes to my mind the _QRegion_
+of _Qt_ that is an adaptation of the _Xorg_ _Xregion_, but there's other).  
+  
+
+[CCC 2014]: /posts/20140103quelques-conferences-interessantes-du-ccc.html
+[Official announce]: http://www.x.org/wiki/Development/Security/Advisory-2014-12-09/
+[Xorg security]: http://media.ccc.de/browse/congress/2013/30C3_-_5499_-_en_-_saal_1_-_201312291830_-_x_security_-_ilja_van_sprundel.html#video

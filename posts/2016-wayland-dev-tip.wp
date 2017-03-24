@@ -1,0 +1,42 @@
+<img class='alignright' src='/images/wayland.png' width='100px'>
+Presque 6 mois sans billet de blog, on se laisse aller ! Pourtant j'ai vraiment eu
+pas mal d'activité ces derniers mois.
+
+Récemment une petite visite au [SSTIC][sstic], cette année j'ai eu une place en troisième
+session. Si ça continue comme ça, l'année prochaine je ne pourrais pas y aller faute de place ! <!-- TEASER_END -->
+Le niveau était bon comme toujours mais j'ai moins vu de talk qui m'ai vraiment impressionné.
+Les talks et les slides sont disponibles en vidéos sur les pages correspondantes.
+
+Et l'objet de ce billet: un petit truc pour ceux qui font du developpement sur weston.
+
+Depuis que j'ai mis à jour ma machine en Ubuntu 16.04, j'avais remarqué qu'il se produisait quelque fois des choses
+bizarres:
+
+* _gnome-terminal_ qui ne se lance plus;
+* la plupart des applications du menus qui ne se lançaient plus;
+* le screensaver / lock screen qui freezait ou clignotait sans permettre de saisir le login et
+le mot de passe (et donc obligé de le tuer à partir d'une console texte);
+
+<img class='alignleft' src='/images/gtk.png' width='100px'>
+J'ai mis un bout de temps à faire le lien entre ce bug et le fait qu'il arrivait tout le temps
+alors que j'étais dans une séance de debuggage de _weston_. Le problème vient du fait
+que _Gtk_ est compilé avec le support wayland, et donc quand on lance un application,
+la bibliothèque va regarder si le wayland display _wayland-0_ est utilisable et si c'est le
+cas il va l'utiliser. 
+
+Quand on lance weston, par défaut il écoute sur _wayland-0_ et donc:
+
+* _gnome-terminal_ fait partie des applications qui ne fonctionnent pas sous wayland (donc
+quand on clique pour le lancer, on n'a aucune indication visuelle de ça);
+* les applications finissaient sur weston, sans que je ne m'en soit rendu compte;
+* le screensaver / locker doit aussi faire partie des application qui ne sont pas wayland proof
+
+Le truc consiste simplement à demander à _weston_ d'écouter sur _wayland-1_ plutôt que _wayland-0_, et
+le tour est joué: on peut garder son desktop opérationel et debugguer en même temps.
+
+En bonus, il se passe exactement la même chose lors d'un debuggage de kwin, car il fait
+serveur wayland aussi.
+
+
+
+[sstic]: https://www.sstic.org/

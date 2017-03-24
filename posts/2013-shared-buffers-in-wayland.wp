@@ -1,0 +1,68 @@
+<html><body><a href="/wp-content/uploads/2013/09/wayland.png"><img class=" wp-image-71 alignright" alt="wayland" src="/wp-content/uploads/2013/09/wayland.png" width="82" height="105"></a>Un petit post à propos des buffers partagés dans wayland, l'implémentation <em>wl_shm</em>.
+
+
+Quand un client fait une mise à jour de l'affichage, la nouvelle image pourrait être envoyé à travers la socket entre le client et le compositor, mais ce serait extrêmement lent: des appels à read() / write() passant par la case kernel sans parler des coûts de copie mémoire associés.
+
+
+
+Dans <em>wayland</em>, il a été choisi de partager ces informations de surfaces en utilisant des mémoires partagées. Le design est le même que l'extension <em>SHM</em> de <em>X11</em>, sauf que dans <em>wayland</em> ce n'est pas une extension mais le seul moyen pour envoyer des surfaces au compositor.
+
+
+
+<span style="text-decoration: underline;">Petite note:</span> une des différences entre <em>mir</em> et <em>wayland</em>, c'est que les buffers sont gérés par le serveur dans un cas et par les clients dans l'autre.
+
+
+
+Donc tout roule comme sur des roulettes, le client fait ses mises à jour de l'affichage dans la zone de mémoire partagée, et il prévient le compositor en envoyant des ordres de mises à jours dans la socket qui le relie au compositor.
+
+
+
+Problème: si on se contente de ça, on va avoir des accès concurrents sur le buffer partagé: le client et le serveur vivent leur vie chacun de leur coté, et il y a fort à parier que le client va vouloir faire d'autres modifications graphiques pendant que le serveur sera en train de fabriquer l'image globale du desktop. Pour régler ce problème, le client est prié de ne plus utiliser le buffer tant que le serveur ne l'aura pas notifié. Le serveur notifie les clients quand il a utilisé un buffer pour faire la mise à jour de l'affichage, ce qui permet au client de libérer ou de réutiliser ce buffer.
+
+
+
+<a href="/wp-content/uploads/2013/10/double-buffering.png"><img class=" wp-image-118 alignright" alt="double-buffering" src="/wp-content/uploads/2013/10/double-buffering.png" width="438" height="85"></a> Le client ne va pas rester à se tourner les pouces en attendant que le serveur ai fini ses opération, on a une implémentation assez classique de double-buffering:
+
+<ul>
+	<li>le client alloue 2 buffers;</li>
+	<li>il dessine dans le premier;</li>
+	<li>il notifie le compositor de la mise à jour de la surface;</li>
+	<li>il dessine dans le second;</li>
+</ul>
+
+Entre temps le compositor devrait avoir notifié de la libération du premier, ce qui permettra de s'en resservir.
+
+
+
+<a href="/wp-content/uploads/2013/10/triple-buffering.png"><img class=" wp-image-119 alignright" alt="triple-buffering" src="/wp-content/uploads/2013/10/triple-buffering.png" width="436" height="120"></a>On peut aussi faire une implémentations de triple-buffering:
+
+<ol>
+	<li>un buffer envoyé au compositor;</li>
+	<li>un buffer qu'on a préparé et qu'on attend d'envoyer;</li>
+	<li>un buffer qui sert pour les modifications courantes</li>
+</ol>
+
+Quand on recevra un avis de libération du buffer 1, on shifte les buffers:
+
+<ul>
+	<li>le buffer 2 est envoyé;</li>
+	<li>le buffer 3 devient celui qui est en attente d'envoi;</li>
+	<li>et le buffer 1 qui vient d'être libéré devient celui qui sert pour les modifications courantes</li>
+</ul>
+
+Wayland ne fige pas comment est implémenté tout ceci, il ne fourni qu'un service de pool de buffer, le client l'utilise comme il lui semble le plus efficace ("<em>wayland is all about choices</em>").
+
+<h1>Sources</h1>
+
+Les éléments cités dans cet article:
+
+<ul>
+	<li>le fichier qui décrit le protocole <em>wayland</em> avec la partie <a href="http://cgit.freedesktop.org/wayland/wayland/tree/protocol/wayland.xml#n253" target="_blank">wl_shm</a>. Le code de parsing est généré à partir de ce fichier;</li>
+	<li>l'<a href="http://en.wikipedia.org/wiki/Multiple_buffering" target="_blank">article</a> de wikipedia sur le multiple-buffering, d'où sont extrait les schémas.</li>
+</ul>
+
+ 
+
+
+
+ </body></html>

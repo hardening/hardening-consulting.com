@@ -1,0 +1,44 @@
+Je cherchais depuis quelques temps un produit genre DropBox ou google drive pour
+partager documents et photos. Je voulais un logiciel opensource et tant qu'à faire l'héberger
+moi-même. J'ai fais quelques essais avec différents produits et finalement j'ai retenu [pydio][pydio],
+ex Ajaxplorer. Malgré le nom il n'y a pas une goutte de python dedans, c'est une bonne
+vieille application en grouik grouik PHP.
+
+L'installation s'est faite sur une debian wheezy.
+<!-- TEASER_END -->
+
+On commence par paramétrer les dépots stable de pydio:
+```console
+# echo "deb http://dl.ajaxplorer.info/repos/apt stable main" > /etc/apt/sources.list.d/pydio.list
+# wget -O - http://dl.ajaxplorer.info/repos/charles@ajaxplorer.info.gpg.key | apt-key add -
+# apt-get install update
+```
+
+On installe quelques packages:
+```console
+# apt-get install pydio php5-sqlite
+```
+
+Il faut ajuster la configuration de PHP dans _/etc/php5/apache2/php.ini_:
+
+* changer _upload\_max\_filesize_ et _post\_max\_size_ à une valeur raisonnable pour poster des 
+fichiers, moi j'ai mis 512M;
+* mettre _output_buffering_ à _off_.
+
+On paramètre Apache:
+```console
+# cp /usr/share/doc/pydio/apache2.sample.conf /etc/apache2/sites-available/pydio
+# a2ensite pydio
+# a2enmod rewrite
+# a2enmod php5
+# service apache2 restart
+```
+ 
+On se connecte en _/pydio_ pour finir l'installation. Moi j'ai pris une base sqlite pour plus de 
+facilité. Et voilà, à moi les partages de photos (privés ou publiques).
+
+En utilisant [l'extension Thunderbird][pydio extension] qui va bien, on peut même héberger les grosses
+pièces jointes de mails avec.
+
+[pydio extension]: https://pyd.io/apps/thunderbird-file-link/
+[pydio]: https://pyd.io/

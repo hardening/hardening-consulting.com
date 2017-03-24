@@ -1,0 +1,19 @@
+<html><body><a href="/wp-content/uploads/2013/09/wayland.png"><img class=" wp-image-71 alignright" title="Wayland" alt="wayland" src="/wp-content/uploads/2013/09/wayland.png" width="82" height="105"></a>Je travaille par intermittence sur un patch dans weston (le compositeur de référence pour wayland) pour que les changements de résolution fonctionnent correctement et surtout que les clients soient prévenus quand un changement de mode (résolution, fréquence de rafraîchissement) intervient.
+
+
+J'en ai discuté longuement sur IRC, proposé plusieurs morceaux de code et finalement c'est intégré: ça devrait finir dans la version 1.3. Ça fait plaisir quand des petits bouts de réflexion et de travail étalés sur un mois sont finalisés.
+
+
+
+Les commits:
+
+<ul>
+	<li>le <a href="http://cgit.freedesktop.org/wayland/weston/commit/?id=ff39efa5c01eb51daf73593cd7a39cc3fac6d48e">premier</a> pour faire des renommages</li>
+	<li>le <a href="http://cgit.freedesktop.org/wayland/weston/commit/?id=57388e44e5a8ddd01f44602d5d24514977f21bd1">second</a> pour faire le boulot</li>
+</ul>
+
+Du coup, maintenant quand on se présente avec un client RDP sur le compositor RDP, que la résolution du desktop ne correspond pas à celle du client, c'est le desktop qui change de résolution et plus le client comme c'était le cas dans l'implémentation précédente.
+
+
+
+ </body></html>

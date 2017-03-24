@@ -1,0 +1,59 @@
+<img class='alignright' src='/images/security-banner.jpg'>
+L'année se termine, les fêtes, la compta à boucler, un peu de vacances et surtout
+les bonnes conférences du CCC.
+
+Avant toute chose, les habituels voeux de fin d'année: bonne année, bonne santé, que tous vos
+projets se réalisent. On espère
+que 2016 sera mieux que 2015 sur le plan national et international. Et ce serait bien que ça commence
+avec une sortie de l'état d'urgence en Février prochain, histoire qu'on se retrouve dans
+la normalité du droit. 
+
+Au CCC, cette année, j'ai trouvé qu'il y avait pas mal de conférence en allemand. Alors je n'écoute pas
+facilement l'allemand mais je trouve que c'est quand même très bien qu'il y ai des talks dans
+la langue de ceux qui hébergent. De plus beaucoup des vidéos ont été traduites dans les deux
+langues ce qui est super. J'ai regardé quelques conférences cette année, il y en a beaucoup de très bien, et <!-- TEASER_END -->
+voici celles qui ont retenues mon attention:
+
+* ce [talk][ddos] sur les DDoS, rigolo, mais la présentation manque un peu de piquant;
+* j'ai bien aimé ce [talk][wifi] sur les chipset WIFI, par un des auteurs des pilotes ath5k. J'ai trouvé
+intéressant la manière dont il a élargi le sujet à propos des fondeurs de puces WIFI
+et des autorité de régulation genre FCC;
+* un [talk][usability] très rigolo à propos des interfaces utilisateur pas user-friendly. 
+On remarquera qu'il y a beaucoup d'exemples pris dans la sphère Apple écornant
+au passage le mythe de l'ergonomie de leurs produits;
+* une [intervention][stasi] qui m'a fait beaucoup rire sur des photos prises dans les archives
+de la Stasi (les services d'espionnage est-Allemand). On y voit des espions qui s'espionnent,
+de la confiscation de porno venu de l'ouest pour pervertir la population de l'est, des 
+arrestations avec enquêtes à la Derrick, bref trop fort.
+* on est toujours gaté quand Nintendo fait de la sécurité. Le [hack][wii] des télécommandes de Wii U d'il y a deux ans était
+très drôle, mais cette [présentation][3ds] sur celui des 3DS vaut aussi son pesant de cacahuètes.
+Avec un moment où un binaire est déchiffré avec une clé de chiffrement, mais la validité
+de la clé n'est jamais vérifiée. Il y a aussi les supers algorithmes de dérivations de clés, sur 
+la Wii c'était des rot13, là ce n'est pas tellement mieux (pas de spoiler);
+* sympa aussi, le [talk][cable modem] sur un gars qui a bidouillé son modem d'abonnement cable, et
+qui a découvert le pot au rose sur la sécurité du FAI;
+* j'ai vu un très bon [tour d'horizon][tls] des failles sur TLS, avec des exemples
+concrets, j'ai mieux compris pas mal des failles avec des noms sexy grâce à ce
+talk; 
+* [l'intervention][terminal] sur la sécurité des terminaux de paiement allemand
+était vraiment flippante. Et il semblerait que pas mal de pays aient le même genre
+de matériel et d'infrastructure (sans doute en France aussi du coup !);
+* finalement ce [talk][great firewall] sur le fingerprinting de la censure en Chine: 
+le grand firewall. Ou comment indentifier que ce sont les sondes chinoises qui accède au
+contenu pour vérifier qu'il ne s'agit pas de contenu interdit.
+
+
+Voilà pour cette année, c'était un bon cru. Si vous voulez toutes les voir (même celle en
+allemand ;) ), la playlist est [ici][playlist]. 
+
+[ddos]: https://youtu.be/87spVhPcXIY
+[wifi]: https://youtu.be/hiUosbhR0Wo
+[usability]: https://youtu.be/ZU45u50AJUQ
+[stasi]: https://www.youtube.com/watch?v=Teu5qXJDFow
+[wii]: https://media.ccc.de/v/30C3_-_5322_-_en_-_saal_g_-_201312292030_-_reverse_engineering_the_wii_u_gamepad_-_delroth
+[3ds]: https://www.youtube.com/watch?v=CzVZgdkzBn8
+[cable modem]: https://www.youtube.com/watch?v=XGmDBo-00mY
+[tls]: https://www.youtube.com/watch?v=oovK9YkJ8Co
+[terminal]: https://www.youtube.com/watch?v=VdlKtexIUU8
+[great firewall]: https://www.youtube.com/watch?v=zcC5K7QTdvM
+[playlist]: https://www.youtube.com/watch?v=uWIivWGgZ5o&list=PLr5Gk1SKZywowEpzTQuUAIWfkGfDEBXJD

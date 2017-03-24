@@ -1,0 +1,151 @@
+<img class='alignright' src='/images/drone.png' width='100px'>
+I've just bought a DJI phantom 3 drone, for professional needs of course :).
+The day was not finished that I was already root on the remote controller and the drone.<!-- TEASER_END -->
+
+# Unboxing
+<img class='alignright' src='/images/dji-phantom-3-standard.jpg' width='400px'> 
+Let's start with the features: it's a DJI Phantom 3 standard. Compared to the extended
+or pro version, it means that the camera is not 4k and the link between the drone and
+the remote controller is done via Wifi and not lightbridge (a protocol that is designed for long distance
+control).
+You install the application on your mobile, you connect on the AP that the remote controller creates, and
+the application gives you the visual feedback of the camera and some advanced settings and flight modes.
+
+Controlling the drone is really easy, it does everything and it is very stable. The Phantom 3 is fast with
+its bees swarm sound, and the video are just incredible, you really feel like in a TV documentary. 
+
+<br style='clear: both'/>
+
+# Hacks level 1
+After some time playing with the drone, I figured that:
+
+* the range was not that big, where I live there's quite a lot of trees and my best distance
+was 300 meters, which is far from the 500 meters announced by marketing;
+* my (old) mobile phone was lagging when running the application, you can not reasonably
+pilot the drone with it. So I had the idea to use a laptop instead of my phone (yeah I know
+I'm oldschool and I don't see a phone like something running an application). Unfortunately I
+haven't found a ready made application to do this, but more about this next in this post. 
+
+## Boost your antenna
+<img class='alignright' src='https://rchelimenace.files.wordpress.com/2012/05/img_0381.jpg?w=300&h=224'>
+
+So it was obvious that the marketting metric system was different than the one we're using
+everyday. It seems that 500 marketting meters equals to 300 real life meters.
+Searching on the net, you quickly find people that made modifications of the remote controller
+to improve the antennas: giving them more range and making them more directional.
+
+Of course, there's the amplifier version or the installation of more powerful antennas. You
+don't even have soldering to do, it's just unwiring some wifi connectors and pluging another one.
+I choosed the solution were you don't have any extra item to buy: a windsurfer. It's not
+about a board and a sail, it's just a cardboard covered with aluminum foil to make the
+antenna more directional. I used that [template][windsurfer] to print and to do yourself of course.
+So some aluminum foil, some cardboard, glue, scissors, a pair of working hands and... Before: 300 meters.
+After: around 700. You can't get better for that price ! 
+
+<br style='clear: both'/>
+
+## Boost your mobile phone
+
+No magic here, my mobile phone is just too weak to decode the (big) h264 video that comes
+from the drone and resize it to the mobile's screen size (small). It was better with my wife's mobile
+that is newer (and have possibly the GPU that do the decoding and scaling in hardware), but not tricks
+you need some CPU power. So I had to buy a tablet to control the drone, but while the tablet was delivered
+I have experimented my idea to have the video shown on a laptop.
+ 
+
+# Let's hack, level 2
+<img class='alignleft' src='/images/phantom-arch.png' width='400px'>
+The DJI architecture is quite interesting, we have a game with 4 players: the remote controller
+is a Wifi Access Point, and the the drone, the camera and the mobile connect on this Wifi network.
+An interesting point: the camera is separated from the the drone, that means that image treatment
+won't interfere with the navigation (important point). The wifi encryption is WPA2 and the default
+SSID is derived from the MAC address of the remote controller: ```PHANTOM3_[6 last digits of the MAC address]```.
+The default associated password, long and strong: ```12341234```. I thought that the name of the SSID
+was checked to be sure to connect on a DJI device, but it must not be the case as you can change
+that SSID to anything by configuration.
+
+The remote controller runs a DHCP server and serves addresses in the 192.168.1.0/24 network. The remote controller
+is always at 192.168.1.1, the drone at 192.168.1.2, the camera at 192.168.1.3 and the mobile
+usually at 192.168.1.20.
+
+Once connected the mobile application connects to the remote controller, the drone and the
+camera. I guess that the application gets telemetry data this way, battery levels (drone and remote)
+and the strength of the misc Wifi signals. The drone is quite autonomous, so when you activate some
+intelligent flight modes, the drone gets the key data and does the job alone. It's not the mobile
+that guides the drone in real-time. 
+
+<br style='clear: both'/>
+
+## Aren't you missing some telnet ?
+
+The camera can be accessed via telnet, FTP and even SSH. Searching a little on the net,
+you can find some accounts with a limited access but you're not root. I read some papers on the subject
+and it seems that the password is not trivial, at least it resists a basic John the ripper run.
+ 
+Strangely on the drone and the remote controller, you have [root access via FTP][telnet], so
+you can easily reactivate a telnet server and be root on your remote or drone. This is
+what is used to improve the WIFI signal strength: just telnet and pass the right commands.
+
+
+## Show me your packets...
+
+And here we are, when you want it fun, you always end up with doing some wireshark captures.
+You put the Wifi adapter in monitor mode (when it is able to) and you capture all packets
+around. Some advices when you want decrypt some WPA and that you already know the password:
+
+* read the dedicated [wireshark page][wireshark80211], it has all the basics;
+* switch off AP around or you get an enormous capture file;
+* kill applications that do some network, they are listed by _airmon-ng_ when switching the
+card in monitor mode (yes _NetworkManager_ I'm pointing at you);
+* don't forget to configure your monitor card to the right channel or with the overlapping
+of channels you will get some packets, but not all;
+* you need the 4 packets of the WPA handshake or decoding won't work (filter with _eapol_ in the
+filter box of wireshark);
+* when you export a piece of the capture file, don't forget to include these 4 packets,
+or your capture file is unusable;
+
+After some minutes you will see that the mobile connects on the drone, the remote and the camera
+using different protocols.
+
+Between the drone and the remote it looks like a propriatary protocol, which structure is quite
+easy to find:
+
+```
+0x55 [packet size] 0x04 [command ?] .... [chksum]  
+```
+
+Hard to find the meaning of the command field. Perhaps by simulating the drone, returning
+choosen informations and watching the mobile app...
+I've not found what kind of checksum it was, but I'll find it. Some reverse engineering work have
+been done in the phantom 1 and 2, so I guess the phantom 3 is done in the same spirit.
+
+<u>**Edit**</u>: I've done some work on the subject, so you can find more about the Phantom 3 protocol 
+in [that post](/en/posts/20170305-phantom-3-protocol.html).
+
+
+On the camera side, things are transported over UDT, a UDP based protocol. The application running 9001 port
+looks like a heartbeat. And the visual feedback is some H264 sent over UDP from the 9000 port.
+
+
+## Visual feedback on a PC
+
+So I have written a piece of [code][github] that connects on the 9000 port of the camera,
+and extract the H264 and outputs it on standard output. A magical invocation of mplayer
+and you get the camera view on your laptop:
+
+```console
+# ./phantom3-video | mplayer -demuxer h264es -framedrop -benchmark -
+```
+
+Nice isn't it !
+
+You get a few seconds of latency: me too. I guess that it's mplayer's fault. It could
+be checked by coding a h264 decoder.
+
+To be continued...
+
+[windsurfer]: https://rchelimenace.wordpress.com/how-to-build-your-own-windsurfer-antenna/
+[telnet]: http://www.phantompilots.com/threads/phantom-3-standard-range-mod-lets-do-it-together.80721/
+[wireshark80211]: https://wiki.wireshark.org/HowToDecrypt802.11
+[github]: https://github.com/hardening/Cave/blob/master/phantom3-video.cpp
+

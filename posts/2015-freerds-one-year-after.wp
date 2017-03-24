@@ -1,0 +1,116 @@
+<img class="alignright" alt="RDP" width="100px" src="/wp-content/uploads/2014/01/rdc-icon.png">
+
+Et oui déjà plus d'un an de développements divers et variés sur FreeRDS. Cet article donne
+quelques annecdotes et bugs que nous avons rencontré (et occis) depuis fin 2013.
+
+# Ah les clients !
+
+Forcément quand on développe un serveur RDP, on est confronté à l'écosystème des clients
+RDP. Il y a _mstsc_, le plus connu, avec ses multiples versions associées aux versions de Windows. 
+Et puis ceux qui vivent dans l'ombre: xfreerdp, rdesktop, les diverses versions mobiles de clients
+qui ont le même nom que le grand frère pour desktop mais dont le code n'a rien à voir. 
+<!-- TEASER_END -->
+
+## FreeRDS ne marche pas avec mstsc
+
+C'était dans les débuts, évidement on faisait nos tests avec le client FreeRDP. Et
+soudain un des développeurs a trouvé que _mstsc_ ne marchait pas pour lui, ça semblait
+se connecter et couper directement. On a tous fait l'essai et _ça marchait chez nous(TM)_. 
+
+Réflexe habituel:
+>	C'est de la faute de windows, tu ne voudrais pas réinstaller ?
+
+ 
+Après enquête, il s'est avéré que c'était une version particulière de mstsc qui avait le bug,
+celle livrée avec windows Seven sorti de la boite. Cette version (7600) avait les caractéristiques suivantes:
+
+* ne supporte pas le codec remoteFx;
+* supporte le codec NS;
+* supporte les marqueurs de frames;
+* mais il ne savait pas faire de marqueurs de frames pour les commandes de surfaces;
+
+Et évidement dans ce cas, nous faisions du NS codec en nous utilisant des marqueurs de frames pour les commandes de surface. 
+Donc à la première image envoyée, le client coupait pour raison de commande inconnue.
+
+Un bug qui parait trivial et évident mais qui nous a vraiment occupé un bon bout de temps.
+
+## Les versions mobiles
+
+Nous avons fait des essais avec des version mobiles, et on n'a pas été déçu. Enfin
+si, on a été bien déçu par ces clients RDP qui ne supportent pas grand chose. Certains annoncent
+des tailles maximales de paquets qui nous ont posé problème (trop petit). 
+On a eu un terminal tournant sous WindowsCE (sick) avec une formidable résolution de 320x200.
+On a du faire un écran de login exprès pour lui, 320x200 c'est vraiment tout petit !
+
+
+## Les ancêtres !
+
+Nous avons aussi eu du fil à retordre avec les clients legacy, genre _rdesktop_. Le problème
+c'est que certain avaient des clients légers installés avec des versions bugguées de 
+_rdesktop_, difficile de dire "il faudrait mettre à jour la version bugguée de votre firmware". 
+Il a donc fallu faire des adaptations pour ces versions. Parmi les choses à faire :
+
+* gérer un bug d'endianess lors des premiers paquets;
+* gérer une taille invalide envoyée lors de la négociation;
+* adapter le channel de redirection de disque, certains résultats de commandes étaient mal 
+interprétés par le client;
+* et évidement le ponpon: implémenter correctement la sécurité RDP (4) dans les parties serveur de
+FreeRDP. Malgré ça, il a quand même fallu faire un hack pour contourner des problèmes avec des clès
+trop grosses. Sinon c'est segfault par écrasement de la pile sur le client, un exploit ?
+
+
+
+# Des bons bugs maison
+
+Évidement il y a eu aussi des bugs ou des difficultés dans FreeRDS lui-même. 
+
+## Code d'erreur TLS avec l'authentification NLA
+
+On a observé un bug intéressant avec certaines version de _mstsc_. Quand l'authentification
+échouait en mode NLA, le client freezait. Après enquête et comparaison avec un serveur
+windows, il s'avère qu'il fallait couper la connection TLS en renvoyant une erreur TLS
+adaptée. Si on ne le fait pas cette version de _mstsc_ freeze (CVE à chercher ?). 
+
+OpenSSL ne permet pas vraiment de faire ça facilement, et il a fallu se retrousser les manches et
+regarder le code source d'openSSL pour arriver à lui faire retourner le bon code d'erreur TLS. 
+Respect à Marc-André (Moreau) qui a réussi à gérer ça dans un temps record.
+
+## Mises à jour en dehors de l'écran
+
+Un bugs que nous avons eu en plusieurs exemplaires: les rafraîchissements en dehors de 
+l'écran. C'est quand on envoit au client un bout d'image à des coordonnées qui dépassent 
+de la résolution négociée. La plupart du temps ça se fini avec une coupure de la connection
+à l'initiative du client.
+ 
+Néanmoins, coté client, ces vérifications ne doivent pas tout le temps être faite
+car des fois ça passe et d'autre fois non. C'est aussi très variable selon le client.
+
+Évidement ces vérifications coté serveur doivent être bien faite aussi durant les phases
+de redimensionnement de l'écran, ce qui n'est pas une mince affaire.
+
+
+## Molette de souris
+
+Quand un événement souris annonçant un "click" sur la molette est envoyé, les coordonnées associées à 
+cet événement sont souvent erronées (0, 0). Ce qui a donné un beau bug avec la molette qui ne fonctionnait pas, 
+ou mieux: pas tout le temps. L'application ne recevant pas toujours l'information aux bonnes coordonnées.
+
+
+## Les arcanes du planar codec
+
+Quand le client ne supporte pas le codec remoteFx, on encode les images en utilisant le planar codec.
+Mais son implémentation a vraiment été difficile: les spécifications donnent du code
+pour un décodeur, et sont très vagues pour l'encodeur. Et bien sûr c'est cette partie 
+qui est difficile à coder. 
+
+Avec un peu de reverse sur le code de référence, on s'est aussi
+aperçu que les spécifications ne disaient pas tout, ce qui expliquait des artefacts qu'on voyait
+avec _mstsc_ sur certaines images. Enfin à force d'obstination, on en est venu à bout en au moins mode
+16 bits, si on voulait faire du 24 bits il faudrait implémenter une compression non-documentée...
+
+
+# Opensourcing
+
+Nous travaillons actuellement sur l'OpenSourcing de notre version de FreeRDS, et une
+nouvelle aventure commencera une fois le bébé dans la nature. Des bugs sympas une fois qu'il
+sera dans les mains de plus de personnes.

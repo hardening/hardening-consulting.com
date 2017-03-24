@@ -1,0 +1,75 @@
+<img class='alignright' src='/images/wayland.png' height='100px'>
+# Wayland / weston
+
+## RDP Compositor
+I'm the author and official maintainer for the RDP compositor in weston. This headless
+compositor exports a wayland desktop through the RDP protocol. This [post][FreeRDP compositor] 
+covers this subject in details.
+
+Note that this compositor is also used by Jason Ekstrand's fullscreen shell.
+
+There have been a lot of press activity around that when it has been released 
+(see [press][Press] section).
+
+
+## FreeRDS compositor
+This project is quite similar to the RDP compositor, this time it's about having
+a weston desktop exported via FreeRDS. The FreeRds session manager can instanciate
+a weston desktop using the FreeRds backend. This can be used for testing wayland applications or
+having X11-less installations.
+A [post][FreeRDS compositor] gives more details about this project.
+
+
+
+<img class='alignright' src='/images/FreeRDP.png' height='100px'>
+# FreeRDP
+
+I'm a contributor on the FreeRDP project, I have:
+
+* done many security improvements in RDP packet decoding ;
+* pushed many patches to handle corner cases like failing memory allocations and such ;
+* Reworked the transport layer to have a cleaner design ;
+* and many others...
+
+<img class='alignright' src='/images/rdplogo.jpeg' height='100px'>
+# FreeRDS
+I'm part of the guys that did FreeRDS. I have been working on the server itself as well
+on external channels. 
+
+
+<img class='alignright' src='/images/qt5.jpg' height='100px'>
+# Projects involving Qt
+
+## Qfreerdp
+It's a Qt platform plugin that allows to export application through RDP. With this
+plugin, you can take any Qt5 application and export it through RDP without any recompilation
+(there a limitation with apps using OpenGl).
+
+This project is hosted on [github][qfreerdp]. It is published under the Apache 2.0 license and
+I know that some commercial products are using it internally.
+  
+
+## QFreerds
+This project is not publicly available yet, it's the same kind of project than Qfreerdp but
+to publish the application through FreeRDS. You can comfortably develop and test your Qt5 application
+on your desktop. And when it's ready the binary can be used as-is for a publication through
+FreeRds.
+
+The greeter (gui application asking for login / password) of FreeRDS in this video used that project:
+
+https://www.youtube.com/watch?v=hGErMsA8kG4
+
+
+We also have custom Qt5 widgets that can interact with the FreeRds server. These widgets can
+be dragged/drop directly in QtDesigner. For example, we
+have a mode switcher widget that allows to change the RDP resolution from the application. 
+
+As features will be added in FreeRds, we will add more widgets to lower the gap between a
+native application and a published one.
+ 
+
+
+[Press]: /en/stories/press.html
+[FreeRDP compositor]: /en/posts/20131006an-overview-of-the-rdp-backend-in-weston.html
+[qfreerdp]: https://github.com/hardening/qfreerdp_platform
+[FreeRDS compositor]: /en/posts/20131205an-overview-of-the-freerds-backend-of-weston.html

@@ -1,0 +1,261 @@
+<img class="alignright" alt="code" width="100px" src="/images/binary.jpg">
+
+Titre un peu provoc', un petit billet sur les méthodes ou plutôt les outils de
+développement. Mais nous verrons que les deux sont liés. 
+
+Tout commence à la XDC 2014, où je voyais un vénérable développeur coder en live 
+quelques rangs devant moi. Il bidouillait vraissemblablement Xorg, je le voyais ouvrir
+_vim_ ou _vi_, faire quelques changements, compiler, lancer Xorg qui plantait ou non,
+et faire ça en boucle. Pour avoir bidouillé dans Xorg, ma remarque a été: 
+"Wouah il code Xorg avec _vim_".
+
+C'était un wouah qui voulait dire plein de chose: à la fois du respect et puis aussi
+"au secours".
+<!-- TEASER_END -->
+
+Avec une accroche comme ça, je vois déjà les barbus, défenseurs de la philosophie
+UNIX, sortir du bois. Si tu es dans ce cas, essaye de lire tout l'article
+avant de commenter "_vim_, c'est de loin le meilleur outil pour coder".
+
+
+# Éditeur de texte versus IDE
+
+## Éditeurs de textes
+<img class="alignright" alt="Vim" width="100px" src="/images/vim-logo.png">
+Je parlais de _vim_ mais c'est exactement pareil pour _vi_, _ed_, _xemacs_, _gedit_, _kate_. Tous
+ces derniers ne sont que des éditeurs de textes: 
+
+* ils permettent d'éditer le texte avec plus ou moins de facilité (le mode commande
+de _vi_ c'est quand même un défi à l'ergonomie);
+* dans le meilleur des cas, ils font le surlignement de la syntaxe en fonction du 
+langage;
+* ils permettent des manipulations plus ou moins avancées en mode texte (par exemple
+des substitutions de la mort avec _vi_ ou _xemacs_). Mais ça reste de la manipulation
+sur du texte;
+* ils sont extrêmement légers en terme de ressources;
+* vu leur minimalisme, ils tournent souvent en mode terminal (le mode graphique c'est
+pour les windowsiens). La version graphique n'apporte souvent pas beaucoup de valeur ajoutée
+à part la fenêtre plus grande.
+
+Comme disait un de mes profs de fac qui avait vécu les débuts de l'informatique:
+"rien qu'on ne faisait déjà il y a 10 ans". Et force est de constater que les avancées
+dans ces outils sont vraiment minimes, si bien que je pense que le _vim_ actuel tourne 
+parfaitement sur des ordinosaures. 
+ 
+## IDEs
+<img class="alignright" alt="eclipse" width="100px" src="/images/eclipse-logo.jpg">
+L'autre classe de programmes ce sont les IDEs pour _Integrated Development Environment_. 
+Là il s'agit d'outils pour faire du développement, pas pour éditer du texte, mais bien
+pour faire du développement logiciel.
+Ils permettent bien évidement de faire la même chose que les éditeurs de texte. À part peut-être
+les remplacements de fous à la vi, ils sont capables des mêmes tâches. Mais en fait qui se sert au
+quotidien (plus d'une fois par jour) des capacité de remplacement de _vi_ ?
+
+Malheureusement ces outils ont été très marketté avec la promesse que c'est le logiciel
+qui codait et pas le développeur. Il y a des patrons qui sont été assez bête pour croire
+à ça, et aussi hélas des développeurs qui ont été élevés avec et ne savent rien faire
+d'autre que ce que sait faire le logiciel. Mais si on passe au delà du brillant marketé
+on decouvre de _vrais bons outils(tm)_. 
+
+Avec un IDE, on est en présence d'un outil qui comprend le code. Quand on fait du C++
+dans le CDT d'éclipse, l'IDE comprend les structures du langage, il est capable de 
+faire l'assistance au codage. Ça se traduit par le fait le code se présente correctement
+directement, mais pas seulement. On a l'indispensable complétion. 
+L'IDE prévient dans le cas d'erreurs courantes, par exemple
+en C / C++: _break_ oublié dans un _switch_, membre non initialisé dans le constructeur, ou 
+membres initialisés dans un ordre différent de la déclaration.
+
+
+Alors là, bien sûr le barbus défenseur d'UNIX te dit:
+```console
+	ouai mais eclipse quand tu le lances il mange directement toute la mémoire, alors que vi il est super light.
+``` 
+
+C'est vrai mais on ne parle pas de la même chose, un IDE fait infiniment plus de
+chose qu'un simple éditeurs de texte, même si celui-ci fait le surlignage de syntaxe. Un IDE
+c'est une arme de guerre pour coder, un éditeur de texte ça reste un canif. Même
+avec une grande lame, un canif reste un canif.
+
+
+# Retravailler le code
+<img class="alignright" alt="Mr propre" width="100px" src="/images/mrproper.png">
+Le code met typiquement 20% du temps à être écrit et 80% à être maintenu et à
+subir des évolutions. Donc le refactoring et la maintenance sont des éléments essentiels
+dans la vie d'un logiciel.
+
+Quid du refactoring quand on utilise _vim_. Comment je fais si je 
+veux renommer un champ _size_ d'une structure en _length_ ? Traditionnellement ça se fait à coups de
+_grep_ et d'éditions à la main des fichiers concernés. Mais avec un renommage de ce type (_size_ et
+_length_ sont très courants comme noms de variables, de champs ou paramètres de fonctions), on va avoir plein de faux positifs 
+dans le résultat du _grep_. Et faire le changement va être vraiment prompte aux erreurs, comme
+au final c'est un humain qui fera la manipulation. Sans compter qu'après avoir cette grosse
+manipulation répétitive sur des dizaines de fichiers, on se sens franchement intelligent. 
+
+Le résultat c'est que bien souvent ce renommage ne sera pas fait, vu le travail ingrat
+que celà va demander. Ou bien alors un développeur se fatiguera à le faire au lieu de
+faire des choses utiles.
+
+Avec un IDE qui comprends la structure du code, le renommage est une opération banale et c'est l'IDE qui fait tout le boulot.
+
+
+# Explorer le code
+<img class="alignright" alt="Mr propre" width="100px" src="/images/explore.jpg">
+
+J'ai souvent surpris des développeurs: je venais de descendre de git leur projet, leur bébé chéri, le
+code qu'ils connaissent sur le bout des doigts, et je parlais du code comme si je le connaissais bien.
+Il y a l'expérience bien sûr (tous les programmes sont fait pareils !) mais la magie est autre part.
+
+Quand on n'a que _vim_ sous la main, explorer le projet va se faire en lisant beaucoup de code. Si on
+veut essayer de corriger quelque chose, on va devoir commencer par une imprégniation
+pour voir un peu comment le programme est conçu. Et puis au fur et à mesure qu'on a 
+réussi à accumuler de la connaissance, on va prendre de l'aisance sur le programme et
+pouvoir commencer à travailler.
+
+Avec une IDE, cette tâche besogneuse d'imprégniation va être facilité par deux
+outils: celui qui permet d'avoir la hiérarchie des appels (_call stack hierarchy_ dans _eclipse_), et
+celui qui permet d'avoir les références à une variable ou un champs (_references in
+workspace_ dans _eclipse_). 
+
+Avec la hiérarchie des appels à une fonction, on voit directement où est appelée
+la fonction, on peut ouvrir les appelants et regarder comment ils préparent les
+arguments, etc... Avec _vim_, c'est un _grep_, trouver le bon fichier, l'ouvrir et se mettre à la 
+bonne ligne. Bref, plein d'étapes qui font qu'on ne sait plus ce qu'on cherchait quand
+on est à la ligne en question.
+
+Le tracker de références permet de savoir à quel endroit du code est utilisé une variable
+ou un champs. Exemple typique: un champ qui est lu dans le fichier de configuration de 
+l'application, on regarde qui écrit dans le champ et rapidement on trouve l'endroit où
+la configuration est parsée puis renseignée. Regarder qui appelle une fonction ou comment sert
+un champs permet la plupart du temps de savoir exactement à quoi sert ce champs ou cette fonction.
+
+Ces deux outils vont au-delà car ils permettent aussi d'avoir une idée de l'ampleur et du risque
+d'un refactoring. On sait qu'on devra faire plus attention si une fonction est appelée depuis
+moultes endroits ou un champs très utilisé.
+
+
+Pour reprendre l'exemple du développeur _Xorg_, dans sa présentation il parlait de 
+refactoring qui avait touché le code un peu partout. Avec _vi_, c'est le
+genre d'opérations qui est difficile à gérer et on repose clairement sur la connaissance
+exhaustive du code par le développeur (chose la plus sujette à failles).
+Une IDE n'enlève pas la nécessaire connaissance du projet, mais il permet d'encadrer ce refactoring.   
+
+
+# Implications sur les normes de codages
+
+On pourrait en rester là, mais en fait l'utilisation de _vim_ ou de _eclipse_ dans un projet
+a des conséquences bien plus importantes qu'on ne pourrait le croire.
+
+Souvent dans un projet pour avoir une homogénéité du code des règles de présentation
+du code et de bonnes pratiques sont édictées. Pour les affinités, il rentre en compte 
+l'expérience de chacun, c'est un peu les goûts et les couleurs. Essayer d'argumenter sur 
+le sujet correspond vite à rentrer dans un PMU et dire "c'est le PSG les meilleurs y'a pas photo".
+
+Néanmoins les règles qui sont choisies sont souvent influencées par l'outil, même si on
+a oublié que c'était le cas. 
+
+Par exemple, ce type de présentation:
+ 
+``` C 
+static void 
+myFunction()
+{
+	if (val)
+	{
+		do_treatment();
+	}
+}
+```
+
+On peut y déceler l'éditeur qui n'est pas capable de suivre les blocs de codes,
+et donc on aligne artificiellement les accolades pour que l'aspect dans l'éditeur
+permette de suivre le flot du code. 
+
+Pour qu'on puisse facilement identifier le type de retour de la fonction, on le met 
+sur une ligne à part. 
+
+On force les accolades pour le _if_ avec une seule instruction, pour éviter l'erreur suivante:
+
+``` C 
+	if (val)
+		do_treatment();
+		do_other_treatment();
+```
+ 
+Mais en fait avec n'importe quelle IDE:
+
+* on a surlignage des blocs donc pas besoin de perdre des lignes avec une accolade simple qui fait ressortir le bloc.
+On a même un explorateur de fonctions, sur tout le projet, qui permet d'aller directement à la fonction choisie;
+* l'IDE connait le type de retour d'une fonction, pas besoin de dédier une ligne à ça;
+* le code est toujours bien présenté et on n'a jamais le cas avec le _if_ et deux 
+instructions mal alignées;
+
+
+
+Au final, on peut avoir ce type de présentation plus compacte:
+``` C 
+static void myFunction() {
+	if (val)
+		do_treatment();
+}
+```
+
+
+Il y a aussi les strictes limitations sur le nombre de caractères par ligne, chez _Wayland_
+par exemple c'est 80. Ça conduit à des choses un peu ridicules quand on peut afficher 
+au moins 2 fois plus sur n'importe quel écran:
+
+``` C 
+if (!wl_list_empty(&i->request_list))
+	printf("\t%d, %s_requests,\n",
+	       wl_list_length(&i->request_list), i->name);
+else
+	printf("\t0, NULL,\n");
+
+if (!wl_list_empty(&i->event_list))
+	printf("\t%d, %s_events,\n",
+	       wl_list_length(&i->event_list), i->name);
+else
+	printf("\t0, NULL,\n");
+```
+
+Tout ça pour que les développeurs utilisant _vim_ dans un terminal à 80 colonnes puissent être
+bien à l'aise !
+
+On voit donc que l'outil dicte vraiment la forme du code. C'est même courant que
+certaines règles de codages adaptées aux éditeurs de texte genre _vim_ soient adoptées par 
+des codeurs qui codent sous _eclipse_. On fait comme ça parce que les autres projets font
+comme ça ou bien parce qu'on a lu quelque part que c'était bien de faire comme ça (que ça
+faisait pro). 
+
+Je ne parle même pas des normes Microsoft, datant d'un autre âge, où le nom
+de la variable porte une indication sur son type: en plus de faire des noms de variables
+horribles, on peut légitimement s'interroger sur l'utilité que ça avait, même à l'époque !
+Néanmoins on en trouve encore à les utiliser et à dire que c'est comme ça qu'il faut faire
+et pas autrement. 
+
+
+# Laisse toi tenter par le coté obscur de la force
+<img class="alignright" alt="Dark vador" width="150px" src="/images/vador.png">
+
+Évidement l'objectif de cet article n'est pas de casser _vim_ ou les autres. La plupart
+des gros logiciels OpenSource on été codé au _vim_, et moi-même je l'utilise ponctuellement. 
+Par contre, je pense que ceux qui n'utilisent
+que ça, devrait passer au delà de leur résistance au changement, et essayer une IDE
+pendant deux semaines (pour avoir le temps et la curiosité d'appréhender les fonctionnalités). 
+
+_Eclipse_, pour un codeur C/C++ expérimenté qui réussi à prendre en main
+ses fonctionnalités, ça devient une arme de guerre, on est vraiment plus efficace.
+
+Quand on a gouté à la puissance d'une IDE, on se sent tout nu en codant avec _vim_. 
+On ouvre _vim_ sur ce fichier _C_ et on n'a 
+l'impression d'être en terrain hostile, que le code lutte contre soit, qu'il y a 
+plein de choses à se rappeler pour pouvoir travailler. 
+
+Bref, laisse toi tenter ! 
+ 
+Note de dernière minute: je viens de jeter un oeil à la [mouture _Linux_][VS] de _VisualStudio_. 
+Dommage qu'il faille lire l'aide pour trouver les raccourcis clavier des fonctions orientées IDE: référence, renommage,
+etc... Je n'ai pas fait de test extensif mais il me semble encore loin d'_Eclipse_, en tout cas les
+fonctions type IDE ne sont pas mises en avant.
+
+[VS]: https://code.visualstudio.com/Download 

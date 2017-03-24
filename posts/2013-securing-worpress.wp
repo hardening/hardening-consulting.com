@@ -1,0 +1,15 @@
+<html><body><p>Le prem<a href="http://5.39.91.40/wp-content/uploads/2013/09/wordpress-firewall.jpeg"><img class="size-full wp-image-22 alignright" title="Wordpress firewall" alt="Wordpress firewall" src="http://5.39.91.40/wp-content/uploads/2013/09/wordpress-firewall.jpeg" width="182" height="156"></a>ier billet de ce blog.
+
+
+Mettre <em><strong>wordpress</strong></em>, ça m'inspire un peu de laisser sa porte d'entrée ouverte et de mettre devant la maison un panneau publicitaire de 4 mètre sur 3:
+
+</p><blockquote>venez, c'est ouvert !</blockquote>
+
+En butinant sur le web, j'ai trouvé quelques liens intéressants pour sécuriser <strong><em>wordpress</em></strong>, notamment:
+
+<ul>
+	<li>une <a title="Codex wordpress" href="http://codex.wordpress.org/Hardening_WordPress">page</a> donnant ce que j'appellerais des pratiques évidentes (on dirait le manuel d'hygiène du SI de l'ANSSI ;) )</li>
+	<li>un <a title="Firewall pour wordpress" href="http://wordpress.org/support/plugin/all-in-one-wp-security-and-firewall">plugin</a> faisant firewall pour <strong><em>wordpress</em></strong></li>
+</ul>
+
+Hope it helps.</body></html>

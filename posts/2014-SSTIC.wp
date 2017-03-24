@@ -1,0 +1,52 @@
+<img class='alignright' src='/images/security-banner.jpg'>
+Un petit retour sur la mouture 2014 du SSTIC. Je crois que cette année a été une
+très bonne édition, en tout cas il y a eu peu de conférences qui ne m'ont pas intéressé.
+Et puis le SSTIC c'est aussi l'ambiance, les rencontres, le social event (évidement) et 
+l'impression d'être avec une communauté qui comprend ce que tu dis.
+
+Parmi les conférences qui m'ont un plus émoustillées que les autres:
+
+* Celle sur [la sécurité des boxes ADSL][secu boxes]. L'approche est rigolote car d'habitude
+on recherche plutôt des choses en attaquant la box sur son interface ethernet: celle
+qui a la majorité des services publiés. Là, les attaquants ont décidé de s'attaquer à l'interface
+ADSL et de se faire passer pour le DSLAM pour faire du man-in-the-middle sur la ligne téléphonique. Ils ont
+trouvé des trucs sympas avec des boxes qui acceptent des mises à jour maison. De plus l'attaque
+semble plus que pertinente car la surface d'attaque (la ligne téléphonique) est généralement
+peu protégée et en plus sur la voie publique: on peut déployer le dispositif d'écoute
+sans gros risques dans une armoire téléphonique dans la rue. <!-- TEASER_END --> 
+Petit détail rigolo les boxes étaient anonymisées (box A, B, C, D) sauf que sur un des slides la configuration
+ATM était montrée et en cherchant, on trouvait qu'une des boxes était une FreeBox :)
+
+* Toute la série de talks du [mercredi matin][programme], orientés AD et windowseries, étaient très intéressants
+et montraient bien le faible degré de maîtrise des SI à base d'AD ;
+
+* J'ai bien aimé aussi [celle][ordivision] sur la sécurité des ordivisions (smart TV) avec des failles
+très vieilles de libUpnp toujours présentes ;
+
+* le talk sur le [bootkit revisited][bootkit] m'a plu, car c'était plein de tricks bas
+niveau au moment du boot pour finalement compromettre le windows ;
+
+* les conférences présentées par [Quakslabs][quarkslab] étaient vraiment de très bonne qualité, 
+celle sur le [scan de ports à grande échelle][massive scan port] m'a rappelé de vieux 
+souvenirs du temps d'intranode ;  
+
+* un [talk][libressl] que j'ai trouvé très intelligent sur les implémentations de librairies
+cryptographiques. On a entendu tellement de bétises suite à heartbleed, que c'était
+bien d'entendre un peu de bon sens ;
+
+* beaucoup de bon talks le vendredi, mais c'est vraiment la [conférence de cloture][miasm]
+sur miasm qui m'a le plus ravi. J'espère qu'elle sera en vidéo car on rigolé pendant
+tout le talk.
+
+
+Note: les slides arrivent sur les pages du programmes, sans doutes bientôt les vidéos.
+
+
+[secu boxes]: https://www.sstic.org/2014/presentation/analyse_de_securite_des_box_adsl/
+[programme]: https://www.sstic.org/2014/programme/
+[ordivision]: https://www.sstic.org/2014/presentation/securite_des_ordivisions/
+[bootkit]: https://www.sstic.org/2014/presentation/bootkit_revisited/
+[massive scan port]: https://www.sstic.org/2014/presentation/port_scan_is_not_dead/
+[libressl]: https://www.sstic.org/2014/presentation/crpytocoding/
+[miasm]: https://www.sstic.org/2014/presentation/Tutorial_miasm/
+[quarkslab]: http://www.quarkslab.com/

@@ -1,0 +1,58 @@
+<img class='alignright' src='/images/rdc-icon.png' width='100px'>
+
+Yes, another post on RDP ! I did some experiments with automatic reconnection, so this 
+post talks about that project.
+
+<br style='clear:both;'/>
+
+# Automatic reconnection
+
+<img class='alignright' src='/images/rdp-reconnection.jpg'>
+Automatic reconnection allows a RDP client to automatically reconnect to the server without
+the need to re-authenticate. The typical example is when you close the lid of your laptop
+with an active RDP session, when you open it again, the client will reconnect automagically. 
+This can also be the case with a network problem. 
+
+<br style='clear:both;'/>
+<!-- TEASER_END -->
+
+# At the protocol level
+
+Automatic reconnection is described in the [specification][reconnection spec]:
+
+<div style="width:100%; text-align:center;">
+<img class='aligncenter' src='/images/RDP reconnection workflow.png'>
+</div>
+ 
+* Once the client has authenticated, the server will send a reconnection cookie and a session
+id in a [Save Session Info PDU][save session info pdu]. The client is supposed to store these
+values and use then when reconnecting;
+* when it's time to reconnect, it's gonna use the session id and the cookie and will put them
+in the [client info PDU][client info PDU]. In fact it's not the cookie itself but a derived
+value that is computed using this formula:
+```c++
+toSend = hmac_md5(cookie, clientRandom);
+```
+The cookie itself is used like the key for a _HMAC-MD5_ computation. The hashed content is either 32 bytes 
+of zeros when the transport is secured (TLS or NLA security). When the RDP security is used, it is the _clientRandom_ that
+is exchanged during the negotiation.
+
+* When the server receives the packet it will do the same computation to check that the cookie is
+legitimate and will reconnect the client if so.
+
+
+One would note that the specification states that the cookie is supposed be regenerated every hour
+by the server.
+
+
+# To conclusion
+
+A very interesting feature which was quite easy to implement. I found a bug in FreeRDP which was not
+storing the _clientRandom_ on the server-side. Since this [patch][clientRandom], it is fixed.
+
+
+
+[reconnection spec]: https://msdn.microsoft.com/en-us/library/cc240459.aspx
+[save session info pdu]: https://msdn.microsoft.com/en-us/library/cc240635.aspx
+[client info PDU]: https://msdn.microsoft.com/en-us/library/cc240473.aspx
+[clientRandom]: https://github.com/FreeRDP/FreeRDP/commit/b0b3a78a20b7cd3127bd14c9b3a7f7867a0af51d

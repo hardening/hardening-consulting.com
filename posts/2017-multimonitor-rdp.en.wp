@@ -113,7 +113,7 @@ uses the [RDPGFX_RESET_GRAPHICS_PDU][resetGraphics] which allows to setup the si
 As you can see the message contains the size of the graphical buffer, but also the
 layout of the monitors.
 
-* I also figured that in when in multi-monitor, the server creates a ([RDPGFX_CREATE_SURFACE_PDU][surface]) per monitor
+* I also figured that when in multi-monitor, the server creates a [RDPGFX_CREATE_SURFACE_PDU][surface] per monitor
 instead of a big surface covering all monitors. It seems that each surface has its own codec context (for H264 example).
 
 

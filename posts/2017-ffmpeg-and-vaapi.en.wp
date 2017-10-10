@@ -1,0 +1,245 @@
+<img class='alignright' src='/images/ffmpeg.png' width='100px'>
+
+For some project I had the opportunity to look at H264 decoding and the hardware decoding using
+VAAPI. An ideal excuse to write a post about that subject... 
+
+
+# What is VAAPI ?
+
+Taken from Wikipedia:
+
+	The main motivation for VA API is to enable hardware-accelerated video decode at various entry-points 
+	(VLD, IDCT, motion compensation, deblocking) for the prevailing coding standards today (MPEG-2, MPEG-4 
+	ASP/H.263, MPEG-4 AVC/H.264, H.265/HEVC, and VC-1/WMV3). Extending XvMC was considered, but due to its 
+	original design for MPEG-2 MotionComp only, it made more sense to design an interface from scratch that 
+	can fully expose the video decode capabilities in today's GPUs.
+
+This API is also usable directly with a DRM device, a DRI render node for example: very neat to offload the
+GPU decoding without a X server. You can also use it from Wayland of course. 
+
+The idea is to feed the GPU with a video stream (H264, VP9 ou MPEG) and the GPU will do the
+decoding and the rendering in a surface.
+
+<!-- TEASER_END -->
+
+# Decoding some H264 with the VAAPI
+
+So I've started looking at how to interact with the API to do some H264 decoding. My goal was to take
+the H264 bytes, feed the GPU with it, and through the VAAPI get back an image. But of course
+things were not that simple, and I rapidly figured what I will have to code when looking
+at the sample programs. There were a lot of parameters to configure to interact with VAAPI:
+configuration matrixes, rates, ratios, numbers for many settings. There were at least 50 or 100
+of these. 
+
+<img class='alignright' src='/images/nal_stream.png'>
+I though I could not look at how the H264 is organized, but it seemed like it was a requirement. The lengthy [wikipedia page][h264]
+gives an overview of the format's complexity.
+
+TLDR: The stream is splitted in NAL (Network Abstraction Layer). Some of these NAL contain
+decoding parameters, some others are slice with pieces of encoded images. For more details, you can have a look at
+that very good [article][NAL1] and its [friend][NAL2] (all the pictures come from there).
+
+
+<br style='clear: both;'/>
+<img class='alignright' src='/images/h264_bitstream.png' height='200px'>
+
+The VAAPI expect to be set up with the decoding configuration and be fed with slices. That means
+that you must be able to decode all the NALs, build configuration blocks. And then inject the slices to
+get complete frames. Basically that means doing the full H264 parsing down to the slice level. 
+The H264 specification is so big that it seemed like a bad idea to me...
+
+<br style='clear: both;'/>
+
+# ffmpeg, h264 and VAAPI
+
+## How do other projects do ?
+
+When you have some work to do on a subject, it's usually a good idea to look at how the
+others do. So I gave a look at libraries that were doing some H264 decoding and one of the
+library I've looked at was [ffmpeg][ffmpeg]. It decodes H264 and when looking at the documentation and the code
+I figured that it was able to use VAAPI to hardware accelerate the decoding. Lucky draw !
+
+
+## Victory without risk brings triumph without glory
+
+Ffmpeg's documentation gives [examples][ffmpeg+vaapi] to decode using VAAPI with command
+line tools, but nothing to do it programatically. My goal was to be lazy, I had already looked
+at the details of H264, don't tell me I would have to look at ffmpeg's internals ?
+ 
+So in a lazy attempt, I've started by doing a trivial modification to directly use the
+right decoder:
+
+
+```c
+	avcodec_register_all();
+
+	codec = avcodec_find_decoder_by_name("h264_vaapi");
+	if (!codec)	{
+		....
+	}
+```
+
+Even with the last ffmpeg version it didn't work, I was getting a NULL pointer like if the
+decoder was not present. Anyway the compilation looked good and the ffmpeg command line tool was claiming
+to support VAAPI:
+
+```console 
+$ head -n 1 output/config.log
+# ./configure --enable-vaapi --enable-pic --enable-shared --enable-hwaccel=h264_vaapi --disable-stripping --enable-debug=3 --extra-cflags=-gstabs+ --disable-optimizations	
+$ ffmpeg -hwaccels
+ffmpeg version 3.3.1 Copyright (c) 2000-2017 the FFmpeg developers
+  built with gcc 5.4.0 (Ubuntu 5.4.0-6ubuntu1~16.04.4) 20160609
+  configuration: --enable-vaapi --enable-pic --enable-shared --enable-hwaccel=h264_vaapi --disable-stripping --enable-debug=3 --extra-cflags=-gstabs+ --disable-optimizations
+  libavutil      55. 58.100 / 55. 58.100
+  libavcodec     57. 89.100 / 57. 89.100
+  libavformat    57. 71.100 / 57. 71.100
+  libavdevice    57.  6.100 / 57.  6.100
+  libavfilter     6. 82.100 /  6. 82.100
+  libswscale      4.  6.100 /  4.  6.100
+  libswresample   2.  7.100 /  2.  7.100
+Hardware acceleration methods:
+vdpau
+vaapi
+cuvid
+```
+
+After some googling and watching at the [ffmpeg_vaapi.c][ffmpeg_vaapi.c]'s code, I had
+to face reality: I will have to go deeper in ffmpeg than initially planed. 
+
+
+## Exploring ffmpeg internals
+
+As explained above, VAAPI only do hardware acceleration at the slice level. That means that ffmpeg does
+all the H264 parsing and then passes the content to VAAPI for rendering. In the ffmpeg world that doesn't
+make a full decoder, as some architectures like VDPAU do all the decoding from H264 bytes to the rendering. From
+ffmpeg's point of view, VAAPI is just an accelerator and to use it you have to make your hand dirty.
+
+The big steps are deploying a _get_format_ callback:
+
+```C
+static enum AVPixelFormat vaapi_get_format(AVCodecContext *ctx, const enum AVPixelFormat *fmt)
+{
+	const enum AVPixelFormat *fmtIt = fmt;
+
+	while(*fmtIt != AV_PIX_FMT_NONE) {
+		if (*fmtIt == AV_PIX_FMT_VAAPI_VLD)	{
+			if (!vaapi_decode_init(ctx))
+				WLog_ERR(TAG, "error when initializing VAAPI");
+			else
+				return AV_PIX_FMT_VAAPI_VLD;
+		}
+
+		fmtIt++;
+	}
+
+	WLog_ERR(TAG, "expecting VAAPI format");
+	return AV_PIX_FMT_NONE;
+}
+
+....
+
+avctx->get_format = vaapi_get_format;
+```
+If the returned format is _AV_PIX_FMT_VAAPI_VLD_, then ffmpeg will initialize the corresponding
+hardware accelerator. 
+
+Then you have to setup a _get_buffer2_ callback:
+
+```C
+static int vaapi_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
+{
+	...
+    int err;
+
+    err = av_hwframe_get_buffer(ctx->frames_ref, frame, 0);
+    if (err < 0)
+    {
+    	WLog_ERR(TAG, "Failed to allocate decoder surface.\n");
+    }
+    else
+    {
+    	WLog_DBG(TAG, "Decoder given surface %#x.", (unsigned int)(uintptr_t)frame->data[3]);
+    }
+    return err;
+}
+
+....
+
+avctx->get_buffer2 = vaapi_get_buffer;
+```
+
+You have some tricks in initialisation routines, but the [ffmpeg_vaapi.c][ffmpeg_vaapi.c] file
+gives all the needed details.
+
+VAAPI does the rendering in a surface but when you want to get back the bytes, you have
+to write a function that you will call once a frame is received:
+
+```C
+static int vaapi_retrieve_data(AVCodecContext *avctx, AVFrame *input)
+{
+	AVFrame *output = 0;
+	int err;
+
+	WLog_DBG(TAG, "Retrieve data from surface %#x.", (unsigned int)(uintptr_t)input->data[3]);
+
+	output = av_frame_alloc();
+	if (!output)
+		return AVERROR(ENOMEM);
+
+	output->format = AV_PIX_FMT_YUV420P;
+
+	err = av_hwframe_transfer_data(output, input, 0);
+	if (err < 0) {
+		WLog_ERR(TAG, "Failed to transfer data to output frame: %d.", err);
+		goto fail;
+	}
+
+	err = av_frame_copy_props(output, input);
+	if (err < 0) {
+		av_frame_unref(output);
+		goto fail;
+	}
+
+	av_frame_unref(input);
+	av_frame_move_ref(input, output);
+	av_frame_free(&output);
+
+	return 0;
+
+fail:
+	if (output)
+		av_frame_free(&output);
+	return err;
+}
+
+```
+
+And then you get H264 rendering done by the GPU !
+
+## Problems ?
+
+During my tests, some ffmpeg version seemed to wrongly report the supported image formats. For instance with
+the 3.1.8 version, the _YUV420P_ was reported as not supported while with the 3.3.1 it was (with the same underlying hardware of course).
+
+
+I've also seen some bugs with some old MESA drivers, with the supported H264 profiles.
+When a driver supports the _H264Baseline_ profile, it also supports the  _H264BaselineContrained_ 
+because it's only a reduced subset of the functionnalities. But some old drivers wrongly report
+H264 profiles and ffmpeg is too strict when checking.
+
+#Conclusion
+
+A very interesting trip, there should be an applied implementation in
+FreeRDP in some time for some hardware H264 decoding.
+
+
+[NAL1]: http://gentlelogic.blogspot.fr/2011/11/exploring-h264-part-2-h264-bitstream.html
+[NAL2]: http://yumichan.net/video-processing/video-compression/introduction-to-h264-nal-unit/
+[h264]: https://fr.wikipedia.org/wiki/H.264
+[ffmpeg]: https://ffmpeg.org/
+[ffmpeg+vaapi]: https://wiki.libav.org/Hardware/vaapi
+[ffmpeg_vaapi.c]: https://github.com/01org/ffmpeg_libyami/blob/master/ffmpeg_vaapi.c
+
+
+
+

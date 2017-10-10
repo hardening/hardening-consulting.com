@@ -105,7 +105,7 @@ qui est difficile à coder.
 
 Avec un peu de reverse sur le code de référence, on s'est aussi
 aperçu que les spécifications ne disaient pas tout, ce qui expliquait des artefacts qu'on voyait
-avec _mstsc_ sur certaines images. Enfin à force d'obstination, on en est venu à bout en au moins mode
+avec _mstsc_ sur certaines images. Enfin, à force d'obstination, on en est venu à bout au moins pour le mode
 16 bits, si on voulait faire du 24 bits il faudrait implémenter une compression non-documentée...
 
 
@@ -113,4 +113,4 @@ avec _mstsc_ sur certaines images. Enfin à force d'obstination, on en est venu 
 
 Nous travaillons actuellement sur l'OpenSourcing de notre version de FreeRDS, et une
 nouvelle aventure commencera une fois le bébé dans la nature. Des bugs sympas une fois qu'il
-sera dans les mains de plus de personnes.
+sera dans les mains de plus de personnes...

@@ -1,0 +1,99 @@
+<img class='alignright' src='/images/rdc-icon.png' width='100px'>
+
+Un peu de RDP pour bien commencer l'année 2018 (avec tous mes voeux), dans ce billet je vais parler d'une implémentation
+permettant de redimensionner la fenêtre dans _xfreerdp_. 
+
+#Contexte
+
+Dans FreeRDP, on disposait déjà de l'option _smart-sizing_ qui permet de demander à voir
+la fenêtre avec un certain ratio: 100, 150 ou 180 pour cent.
+
+Avec la spécification [MS-RDPEDISP][MS-RDPEDISP], le client peut envoyer la configuration
+de ses écrans au serveur en temps réel, ce qui permet notament au serveur de réagir
+quand le client branche ou débranche un écran, ou bien que la résolution change. Par exemple avec _mstsc_ 
+en mode plein écran, si on change la résolution quand il est iconomisé, et qu'on le
+ramène au premier plan.
+
+Mais on peut faire un usage détourné de cette spécification pour que la fenêtre de FreeRDP
+devienne redimensionnable: en gros on annonce comme taille d'écran, la taille de la fenêtre client.
+<!-- TEASER_END -->
+
+#Protocole
+
+<div style='text-align:center'><img src='https://i-msdn.sec.s-msft.com/dynimg/IC870592.png'></div>
+
+Le protocole est très simple:
+
+* le serveur envoie un paquet [display_control_caps][DISPLAYCONTROL_CAPS_PDU] indiquant
+le nombre maximum de moniteurs supportés, ainsi que les résolutions maximums;
+* le client envoie au fil de l'eau les résolutions des différents écrans (paquet 
+[displaycontrol_monitor_layout][DISPLAYCONTROL_MONITOR_LAYOUT_PDU]). À noter que ce 
+protocole donne plus d'informations que ce qu'on avait dans les _capabilities_ car désormais 
+on dispose de la taille physique de l'écran, ainsi que de son orientation.  
+
+#Première implémentation
+Le décodage des paquets de ce channel était déjà présent, il ne manquait qu'un cablage
+avec l'implémentation de client. C'était relativement facile à réaliser, la seul subtilité
+étant la boucle de retour entre l'utilisateur qui redimensionne la fenêtre et le serveur 
+qui redimensionne la fenêtre lors de la séquence de réactivation (donc on a 2 sources de
+redimensionnement de la fenêtre). 
+
+Mon environnement de test était un _windows 2016 server_ et tout fonctionnait parfaitement. Par acquis
+de conscience, j'ai fait un test avec un _2012 r2_ et c'est là que les problèmes ont commencé.
+
+#Un peu plus de subtilité
+
+<img class='alignright' src='/images/mind-communication.jpg' width='200px'>
+C'est bien simple avec _windows 2012 server r2_, je plantais ma propre session RDP mais aussi 
+tout le serveur: impossible de se relogguer, même en console, une fois le bug activé. Et rien de
+bien compliqué: il suffisait de redimensionner la fenêtre un peu vite et rapidement on obtenait une
+fenêtre noire.
+
+En regardant ce qu'il se passait je me suis aperçu que j'envoyais un peu vite les nouvelles
+dispositions d'écrans. Dans certain cas, la séquence de réactivation n'était pas finie. Je me suis d'ailleurs
+rendu compte que c'était tout le temps le cas, car je m'était cablé sur la callback _DesktopResize_ qui
+est appelée dés qu'on détecte une différence entre la résolution serveur et la résolution locale. Mais
+à ce moment là, on est en plein milieu de la séquence de réactivation et d'après les spécifications
+on est censé ne rien envoyer avant que la renégociation ne soit terminée.
+
+J'ai fait les changements adéquates, le serveur plantait moins, mais il plantait quand même.
+Le seul contournement que j'ai trouvé, c'est de limiter le nombre de redimensionnements: 5 dispositions
+d'écran maximum par seconde. J'ai signalé le bug, pas de retour pour l'instant. 
+
+Ça reste intéressant car celà permet de faire un _DoS_ du serveur avec un utilisateur lambda
+avec une simple et annodine connection RDP, et même les enregistreurs de flux RDP n'y verront
+que du feu (rien d'illégitime à redimensionner).
+<br style='clear: both;'>
+
+#Dernier détail
+<img class='alignright' src='/images/detail.jpg'>
+
+Suite à un retour de bug, je me suis aperçu qu'il manquait un détail à mon implémentation: quand on utilise
+le _pipeline graphique_ (le channel _egfx_), le serveur ne fait pas de séquence de réactivation
+mais envoie directement un paquet [reset_graphics][RDPGFX_RESET_GRAPHICS_PDU] pour redimensionner.
+Une fois ce cas géré, le redimensionnement fonctionne parfaitement.
+<br style='clear: both;'>
+
+# Conclusion
+<img class='alignright' src='/images/conclusion.jpg' width='150px'>
+L'implémentation a été faite dans les pull requests [#4313][PR1] et [#4332][PR2]. 
+
+Le prochain billet devrait encore être sur du RDP car je travaille actuellement sur une implémentation de la spécification
+[MS-RDPEVOR][MS-RDPEVOR] qui est l'équivalent de TSMF (redirection multimédia) mais pour egfx. Comme
+ce channel dépend du channel _geometry tracking_, j'ai déjà poussé un squelette d'implémentation
+dans cette [pull request][PR geometry]. 
+
+À moins que ce ne soit sur les conférences du CCC, car j'en ai vu quelques unes de très
+intéressantes, et je n'ai pas fini de parcourir celles dont le titre m'accrochait.
+
+Bref, la suite au prochain épisode...
+
+
+[MS-RDPEDISP]: https://msdn.microsoft.com/en-us/library/dn366738.aspx
+[MS-RDPEVOR]: https://msdn.microsoft.com/en-us/library/hh554658.aspx
+[DISPLAYCONTROL_CAPS_PDU]: https://msdn.microsoft.com/en-us/library/dn365785.aspx
+[DISPLAYCONTROL_MONITOR_LAYOUT_PDU]: https://msdn.microsoft.com/en-us/library/dn409056.aspx
+[RDPGFX_RESET_GRAPHICS_PDU]: https://msdn.microsoft.com/en-us/library/hh537049.aspx
+[PR1]: https://github.com/FreeRDP/FreeRDP/pull/4313
+[PR2]: https://github.com/FreeRDP/FreeRDP/pull/4332
+[PR geometry]: https://github.com/FreeRDP/FreeRDP/pull/4301

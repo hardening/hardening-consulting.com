@@ -1,0 +1,30 @@
+<img class='alignright' src='/images/conference.jpg' width='100px'>
+
+Une de mes conférences préférée est la LCA, la Linux Conference Australia. Les talks sont
+toujours de très bonne qualité et avec un très bon niveau technique. Il y a quelques
+années, c'est un talk de Daniel Stone qui m'avait donné envie d'essayer des trucs avec
+Wayland.
+
+<!-- TEASER_END -->
+
+Quelques une des vidéos qui m'ont tapé dans l'oeil:
+
+* [celle][VRD] de Keith Packard sur le développement des casques de réalité virtuel dans X. 
+Très intéressant, c'est une sympatique visite dans le monde de Xorg;
+* j'ai bien aimé [la présentation][remoteWork] d'un sysadmin qui s'est mis à travailler à distance,
+je pense que je prendrais quelques un de ses conseils;
+* très intéressant [talk][broadcom] aussi sur le driver VC4 (le GPU du rasperry-pi);
+* ce [talk][kernel self-protect] sur les mesures de self-défense du noyau faisait un bon
+tour de ce qui est disponible; 
+* j'ai bien aimé aussi cet [historique][meson] du système de build meson, le créateur explique 
+les évènements qui ont fait que son projet a fonctionné, c'est très instructif; 
+
+
+La liste complète des vidéos est disponible [ici][lca2018]. 
+
+[VRD]: https://www.youtube.com/watch?v=cQIDm-hFhYg
+[remoteWork]: https://www.youtube.com/watch?v=qFWkDPTjjEM
+[broadcom]: https://www.youtube.com/watch?v=hNeq-iG9pfc
+[kernel self-protect]: https://www.youtube.com/watch?v=bFe9R65VnAw
+[meson]: https://www.youtube.com/watch?v=gHdTzdXkhRY
+[lca2018]: https://www.youtube.com/user/linuxconfau2018/videos

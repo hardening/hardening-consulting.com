@@ -1,0 +1,104 @@
+<img class='alignright' src='/images/rdc-icon.png' width='100px'>
+
+Let's start this new year (best wishes) with some RDP stuff, in this post I will talk
+of an implementation to resize the window in  _xfreerdp_.
+
+#Context
+
+FreeRDP already had the _smart-sizing_ option, it allows to see the window with a
+given aspect ratio: 100, 150 ou 180 percent.
+
+With the [MS-RDPEDISP][MS-RDPEDISP] specification, the client can send its monitors
+layout to the server in real time, that allows the server to react when an output is plugged
+or unplugged, or when the resolution changes. You can experiment that with _mstsc_ in
+fullscreen mode, if you change resolution while the _mstsc_ window is iconized, when you
+uniconize, it is supposed to resize. 
+
+You can also use that specification to make the RDP window resizable: you announce a
+monitor that has the size of the client window. 
+
+<!-- TEASER_END -->
+
+#Protocol
+
+<div style='text-align:center'><img src='https://i-msdn.sec.s-msft.com/dynimg/IC870592.png'></div>
+
+The protocol is quite trivial with only 2 messages exchanged:
+
+* the server sends a [display_control_caps][DISPLAYCONTROL_CAPS_PDU] packet containing
+the maximum number of monitors and resolution constraints;
+* the client sends the monitor's resolutions ([displaycontrol_monitor_layout][DISPLAYCONTROL_MONITOR_LAYOUT_PDU] packet).
+One would note that it gives more informations than the _capabilities_ packet, as now
+we have the physical size of the screen and its orientation.
+
+
+#First shot
+
+The channel and packet decoding was already there, it was just missing the wiring with
+the client implementation. It has been quite easy to do, the only subtility was the
+feedback loop between the user resizing the window by dragging the window corner and 
+the server executing the reactivation sequence (that also resizes the window).
+
+My test environment was a _windows 2016 server_ and everything was just working fine.
+Just for completeness I did a test with a _windows 2012 r2_ server and problems arised.
+
+
+# Let's be a little more subtle
+
+<img class='alignright' src='/images/mind-communication.jpg' width='200px'>
+
+With _windows 2012 server r2_ I was freezing my own RDP session but also the whole server:
+unable to log in again when the bug had been triggered, even when using the console. And
+it was nothing complicated: just resize quickly the FreeRDP window and I was getting
+a black window and a frozen server.
+
+After some bug analysis, I figured that I was probably sending a little too quickly the
+screen layouts. Sometime the reactivation sequence was not fully completed. Well in fact
+they were never finished, as I had wired the  _DesktopResize_ callback which is called as soon 
+as we detect a difference between server and local resolution, and we're quite far from the end 
+of the reactivation sequence. According to the spec you're not supposed to send anything else but
+negociate packets during the negociation sequence.
+
+So I did the required changes, it was crashing a lot less often, but it was still freezing.
+The only workaround I've found is to limit the number of sent layouts per second to 5. I've
+reported the bug but I don't have any feedback. 
+
+It's quite interesting as it allows to do DoS on a server with a restricted used and a RDP connection,
+and even RDP bastion will not see anything illegitimate with resizes. 
+
+<br style='clear: both;'>
+
+#Last details
+<img class='alignright' src='/images/detail.jpg'>
+
+After a bug report, I figured that I had missed a detail in my implementation: when you use
+the _graphical pipeline_ (_egfx channel), the server will not initiate a reactivation
+sequence but will just send a [reset_graphics][RDPGFX_RESET_GRAPHICS_PDU] packet instead. Once
+this case handled correctly, it was working fine.
+ 
+<br style='clear: both;'>
+
+# To conclude
+<img class='alignright' src='/images/conclusion.jpg' width='150px'>
+It has been pushed and merged in pull requests [#4313][PR1] and [#4332][PR2]. 
+
+Next posts should also be on RDP as I'm actually working on a [MS-RDPEVOR][MS-RDPEVOR] implementation,
+it is the equivalent of the TSMF channel (multimedia redirection) but for egfx. As this channel depends
+on the _geometry tracking_ channel, I have already pushed a skeleton for this channel in this
+[pull request][PR geometry]. 
+
+Anyway it could also be a post on last CCC conferences, as I've seen some and they're
+really interesting. And I've not finished looking at the one that had a promising title.
+
+So stay tuned...
+
+
+
+[MS-RDPEDISP]: https://msdn.microsoft.com/en-us/library/dn366738.aspx
+[MS-RDPEVOR]: https://msdn.microsoft.com/en-us/library/hh554658.aspx
+[DISPLAYCONTROL_CAPS_PDU]: https://msdn.microsoft.com/en-us/library/dn365785.aspx
+[DISPLAYCONTROL_MONITOR_LAYOUT_PDU]: https://msdn.microsoft.com/en-us/library/dn409056.aspx
+[RDPGFX_RESET_GRAPHICS_PDU]: https://msdn.microsoft.com/en-us/library/hh537049.aspx
+[PR1]: https://github.com/FreeRDP/FreeRDP/pull/4313
+[PR2]: https://github.com/FreeRDP/FreeRDP/pull/4332
+[PR geometry]: https://github.com/FreeRDP/FreeRDP/pull/4301

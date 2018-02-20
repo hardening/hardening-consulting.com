@@ -655,13 +655,13 @@ INDEX_TEASERS = True
 # 'Read more...' for the index page, if INDEX_TEASERS is True (translatable)
 INDEX_READ_MORE_LINK = '<p class="more"><a href="{link}">{read_more}…</a></p>'
 # 'Read more...' for the RSS_FEED, if RSS_TEASERS is True (translatable)
-RSS_READ_MORE_LINK = '<p><a href="{link}">{read_more}…</a> ({min_remaining_read})</p>'
+FEED_READ_MORE_LINK = '<p><a href="{link}">{read_more}…</a> ({min_remaining_read})</p>'
 
 # Append a URL query to the RSS_READ_MORE_LINK and the //rss/item/link in
 # RSS feeds. Minimum example for Piwik "pk_campaign=rss" and Google Analytics
 # "utm_source=rss&utm_medium=rss&utm_campaign=rss". Advanced option used for
 # traffic source tracking.
-RSS_LINKS_APPEND_QUERY = False
+#RSS_LINKS_APPEND_QUERY = False
 
 # A HTML fragment describing the license, for the sidebar.
 # (translatable)
@@ -731,7 +731,7 @@ COMMENT_SYSTEM_ID = "davidfort"
 # WARNING: if a page would conflict with the index file (usually
 #          caused by setting slug to `index`), the STORY_INDEX
 #          will not be generated for that directory.
-STORY_INDEX = False
+#STORY_INDEX = False
 # Enable comments on story pages?
 # COMMENTS_IN_STORIES = False
 # Enable comments on picture gallery pages?

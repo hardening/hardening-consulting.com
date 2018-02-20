@@ -1,0 +1,28 @@
+<img class='alignright' src='/images/conference.jpg' width='100px'>
+
+The LCA (inux Conference Australia) is one of my favorite conference, with talks 
+of good technical level. Some years ago, it's a talk by Daniel Stone that lead me
+to start playing with Wayland.
+
+A selection of my preferred talks:
+
+
+* The [talk][VRD] by Keith Packard on VR helmet in X, it was very interesting. A nice
+trip in the Xorg world;<!-- TEASER_END -->
+* I liked the [talk][remoteWork] of a sysadmin that started working remotely. I think I
+will take some of his advices;
+* also a very good [presentation][broadcom] on the VC4 driver (rasperry-pi's GPU);
+* the [talk][kernel self-protect] on kernel security enhancement was interesting as it was 
+listing some of the features that exist to harden the linux kernel;  
+* the [story][meson] of the meson build system was also fun, with the creator explaining
+the key events that make his project to be adopted; 
+
+
+All videos are available [here][lca2018]. 
+
+[VRD]: https://www.youtube.com/watch?v=cQIDm-hFhYg
+[remoteWork]: https://www.youtube.com/watch?v=qFWkDPTjjEM
+[broadcom]: https://www.youtube.com/watch?v=hNeq-iG9pfc
+[kernel self-protect]: https://www.youtube.com/watch?v=bFe9R65VnAw
+[meson]: https://www.youtube.com/watch?v=gHdTzdXkhRY
+[lca2018]: https://www.youtube.com/user/linuxconfau2018/videos

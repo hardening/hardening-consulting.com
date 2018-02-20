@@ -1,0 +1,44 @@
+<img class='alignright' src='/images/git.png' width='100px'>
+
+Loin de moi l'idée de faire un article savant sur _git_, on va dire que je suis encore
+un bon gros débutant sur le sujet. Néanmoins quand on fait du développement, on est
+souvent confronté à des choses qu'on voudrait faire avec _git_ sans trop savoir
+comment.
+
+Donc je voulais rassembler quelques astuces que j'ai mis du temps à trouver en cherchant
+sur le net. 
+
+
+# Changer le message du dernier commit
+
+Bien souvent, je code des modifications, je commite ça dans mon historique local et au moment
+des vérification, avant de pousser ça sur _github_, je m'aperçois de changements à faire.
+
+```console
+$ git add file1 file2
+$ git commit --amend
+....
+```
+<!-- TEASER_END -->
+
+
+# Réécriture de l'historique des modifications
+
+Quand on développe un bout de code, les modifications sont rarement purement itératives sur
+chaque aspect. Typiquement, on essaye de faire marcher le tout avant de chercher à découper
+tout ça en bloc logiques. Ce que je dis est un peu abstrait ? Partont d'un exemple concret: l'implémentation
+de MS-RDPEVOR, la redirection de flux vidéos en RDP.
+
+
+
+
+
+
+[MS-RDPEDISP]: https://msdn.microsoft.com/en-us/library/dn366738.aspx
+[MS-RDPEVOR]: https://msdn.microsoft.com/en-us/library/hh554658.aspx
+[DISPLAYCONTROL_CAPS_PDU]: https://msdn.microsoft.com/en-us/library/dn365785.aspx
+[DISPLAYCONTROL_MONITOR_LAYOUT_PDU]: https://msdn.microsoft.com/en-us/library/dn409056.aspx
+[RDPGFX_RESET_GRAPHICS_PDU]: https://msdn.microsoft.com/en-us/library/hh537049.aspx
+[PR1]: https://github.com/FreeRDP/FreeRDP/pull/4313
+[PR2]: https://github.com/FreeRDP/FreeRDP/pull/4332
+[PR geometry]: https://github.com/FreeRDP/FreeRDP/pull/4301

@@ -1,0 +1,151 @@
+<img class='alignright' src='/images/binary.jpg' width='100px'>
+
+Suite à cette petite [vidéo][meson] sur *meson*, j'ai eu envie de jouer un peu avec ce logiciel
+pour voir ce qu'il valait en pratique. J'ai donc fait un premier essai sur un sous-projet d'OGON qui utilise 
+*cmake* comme système de build.
+
+<br style='clear: both;'>
+
+# CMake mon amour
+<img class='alignright' src='/images/cmake.png' width='100px'>
+
+J'entends dire partout: *tout le monde déteste cmake*, mais pour plein de mauvaises raisons, plein de projets l'utilisent.
+Je ne fais pas exception à la masse: à chaque fois que je dois toucher à du *cmake*, cela commence
+par une appréhension, et le langage est tellement moche que même quand j'arrive à faire ce que je veux, 
+je n'ai jamais l'impression d'avoir fait du beau boulot. Et puis souvent, ça ne se passe pas comme
+je veux, et là les phases de débuggage sont toujours épiques. Je ne dois vraiment pas avoir
+la philosophie *cmake*, parce qu'à chaque fois j'ai l'impression que le logiciel fait le contraire de
+ce à quoi je m'attendrais. Bref, dés qu'il y a du cmake à faire j'y vais à reculons.
+
+<!-- TEASER_END -->
+
+Dans à peu près tous les projets, on voit des scripts cmake qui sont copiés d'un dépôt à l'autre
+pour faire la même tâche: par exemple détecter Qt et implanter les targets qui vont bien pour le
+moc, les ressources, ... 
+
+Comme *cmake* existe depuis quelques temps, on voit aussi les fichiers de build tenir compte de 
+la version de *cmake* pour activer ou non tel ou tel fonctionnalité. 
+
+Cela doit tenir au langage, mais souvent les fichiers de build ne sont pas très clairs, et j'ai vu des projets abuser
+des capacités d'introspection avec des bouts de code du genre (double ${):
+
+```cmake
+add_library(${MODULE_NAME} ${${MODULE_PREFIX}_SRCS})
+```
+
+Et les macros ce n'est pas toujours très joli, il y a un peu la philosophie du *PERL* avec beaucoup d'implicite
+ou des mots magiques:
+```cmake
+function(PROTOBUFC_GENERATE_C SOURCES HEADERS)
+	if(NOT ARGN)
+		message(SEND_ERROR "Error: PROTOBUFC_GENERATE_C() called without any proto files")
+		return()
+	endif(NOT ARGN)
+
+	foreach(FIL ${ARGN})
+		get_filename_component(ABS_FIL ${FIL} ABSOLUTE)
+		get_filename_component(FIL_WE ${FIL} NAME_WE)
+		get_filename_component(FIL_PATH ${ABS_FIL} PATH)
+
+		list(APPEND ${SOURCES} "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.${PROTBUFC_SOURCE_EXTENSION}")
+		list(APPEND ${HEADERS} "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.${PROTBUFC_HEADER_EXTENSION}")
+
+		add_custom_command(
+			OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.${PROTBUFC_SOURCE_EXTENSION}"
+			"${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.${PROTBUFC_HEADER_EXTENSION}"
+			COMMAND  ${PROTOBUFC_COMPILER}
+			ARGS --c_out ${CMAKE_CURRENT_BINARY_DIR} -I ${CMAKE_CURRENT_SOURCE_DIR} -I ${FIL_PATH} ${ABS_FIL}
+			DEPENDS ${ABS_FIL}
+			COMMENT "Running protobuf-c compiler on ${FIL}"
+			VERBATIM )
+	endforeach()
+	set_source_files_properties(${${SOURCES}} ${${HEADERS}} PROPERTIES GENERATED TRUE)
+	set(${SOURCES} ${${SOURCES}} PARENT_SCOPE)
+	set(${HEADERS} ${${HEADERS}} PARENT_SCOPE)
+endfunction()
+```
+D'autre encore se plaignent de la documentation pas effective.
+
+Bref, j'ai toujours une impression de code brouillon avec *cmake*. C'est à un tel point que je préfère 
+de loin les *autotools*, au moins avec eux on a tout un corpus de programmes qui les utilisent à bon 
+escient , et on peut toujours s'y référer (enfin les copier sans autre forme de procès) pour obtenir 
+ce qu'on veut. Outre leur lenteur, ils ne marchent pas très bien sous windows. 
+
+# Meson à la rescousse
+<img class='alignright' src='/images/meson.jpg' width='100px'>
+
+Pour commencer, la migration du projet sous *meson* a été extrêmement rapide: quelques
+heures sans jamais en avoir fait auparavant.
+
+Là où on avait ce fameux script pour cmake copié dans chaque projet( *FindQT5* ), et du code pas très beau:
+```cmake
+set(MODULE_NAME "ogon-shadow")
+
+include(FindQT5)
+
+set(${MODULE_NAME}_SRCS
+        workerthread.cpp
+        sessionmodel.cpp
+        mainwindow.cpp
+        main.cpp
+)
+
+add_executable(${MODULE_NAME} ${${MODULE_NAME}_SRCS})
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${QT_EXECUTEABLE_FLAGS}")
+include_directories(${WinPR_INCLUDE_DIR})
+
+target_link_libraries(${MODULE_NAME} ${QT_LIBRARIES} winpr)
+```
+
+On a quelque chose de plus compact, et de mon point de vue, plus joli:
+```javascript
+qt5 = import('qt5')
+
+moc_files = qt5.preprocess(moc_headers: ['mainwindow.h', 'sessionmodel.h', 'workerthread.h'])
+
+shadow = executable('ogon-shadow',
+       'workerthread.cpp', 'sessionmodel.cpp', 'mainwindow.cpp', 'main.cpp', moc_files,
+       dependencies: [qt5_deps, winpr_deps]
+)
+```
+
+A noter que dans le code cmake, le MOC passe sur tous les fichiers "dans notre dos", alors qu'avec *meson*
+c'est explicite.
+
+Au final, le portage meson a divisé par 4 le volume de code gérant le build, et est d'aspect plus
+"propre". Et surtout: même sans connaître *meson*, on voit ce qu'il se passe.
+
+# Mais alors meson c'est l'outil idéal ?
+<img class='alignright' src='/images/mouton5pattes.jpg' width='100px'>
+
+Et bien oui bien sûr, *meson* est le mouton à 5 pattes du build !
+
+J'ai expérimenté quelques désavantages de *meson* par rapport à *cmake*:
+
+* le framework est plus haut niveau que ce qu'on peut faire avec *cmake*. C'est plus un choix qu'un défaut: c'est 
+facile de faire en utilisant le système des *dependency*, mais si on veut faire à la "main" en donnant
+son chemin d'includes et son chemin de libraries à lier, c'est plus besogneux: déclaration d'options, code
+de détection et propagation, mais en fait c'est plus ou moins la même galère qu'en faisant en script *cmake*;
+* les développeurs ont fait le choix d'un langage non turing-complet pour une facilité d'intégration dans les 
+IDE. Non turing-complet (oui ça permet de se la péter en soirée de geek), ça veut notament dire qu'il n'y aucune forme
+de macro ou de fonctions, et les boucles sont réduites à l'expression *foreach*. Ça conduit quelque fois à des formes de 
+recopie de code, même si j'ai vu des choses assez ingénieuses dans les *meson.build* de e19. Une fois cette
+contrainte assimilée, on arrive à faire sans;
+* il y a un module pour générer des fichiers *pkgconfig*, mais rien pour faire des packages *cmake*. Mais
+heureusement que je suis là pour avoir fait cette [contribution][PR]. Je pense que ça devrait aider
+les projets dont dépendent d'autres projets sous *cmake* à passer le pas. 
+
+Coté avantages:
+
+* de nombreux projets ont ou sont en train de passer le pas, donc *meson* est un projet
+très dynamique; 
+* même si le projet est plutôt jeune, il est très mature;
+* les fichiers de build sont compréhensibles sans être un expert de *meson*;
+* la documentation est plutôt complète avec de nombreux exemples de cas pratiques; 
+
+Les mauvaises langues diront que cet article n'a été fait que pour signaler que j'avais contribué à *meson*,
+et ils n'auront pas tort. Mais j'espère qu'il vous aura donné envie de découvrir ce projet
+très intéressant.
+
+[meson]: https://www.youtube.com/watch?v=gHdTzdXkhRY
+[PR]: https://github.com/mesonbuild/meson/pull/3098

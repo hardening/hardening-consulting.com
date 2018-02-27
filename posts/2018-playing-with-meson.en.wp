@@ -1,0 +1,155 @@
+<img class='alignright' src='/images/binary.jpg' width='100px'>
+
+After watching a [video][meson] on *meson*, it made me want to play with this software to
+see how it was in practise. So I did a first shot on a OGON subproject that uses *cmake*
+as build system.
+
+<br style='clear: both;'>
+
+# Lovely CMake
+<img class='alignright' src='/images/cmake.png' width='100px'>
+
+I often hear that *everybody hates cmake*, but lots of projects use it anyway. So most
+probably it's for bad reasons. I'm not an exception, and as soon as I have to touch
+these lovely *CMakeFile.txt*, I always feel dirty, or at least I never have the impression
+to have done some nice job. This happens even when everything goes as I wanted. Not even talking of
+when things go wrong, with epic debugging sessions. I must be missing the *cmake* pĥilosophy 
+because everytime I suspect a behaviour, *cmake* does it the opposite way. So everytime there's 
+some cmake involved I'm reticent to go in that work. 
+
+<!-- TEASER_END -->
+
+In most projects, you see the *good* cmake scripts that are copied from a project to another to do
+do the same task: for instance detecting Qt and create some targets to run the MOC on files, dealing with
+Qt's resources, ...
+
+Moreover as *cmake* existed for some year, build files have to deal with the version of *cmake*, that
+is used, to activate or workaround functionnalities that may be present or not. 
+
+This must be the *cmake* scripting language (or bad practises à la PHP), but often you can
+see projects that abuse of the evaluation capabilities (double ${):
+
+
+```cmake
+add_library(${MODULE_NAME} ${${MODULE_PREFIX}_SRCS})
+```
+
+The macros aren't always that nice, you feel a lot of the *PERL* philosophy with lots of
+implicit rules and magic words:
+
+```cmake
+function(PROTOBUFC_GENERATE_C SOURCES HEADERS)
+	if(NOT ARGN)
+		message(SEND_ERROR "Error: PROTOBUFC_GENERATE_C() called without any proto files")
+		return()
+	endif(NOT ARGN)
+
+	foreach(FIL ${ARGN})
+		get_filename_component(ABS_FIL ${FIL} ABSOLUTE)
+		get_filename_component(FIL_WE ${FIL} NAME_WE)
+		get_filename_component(FIL_PATH ${ABS_FIL} PATH)
+
+		list(APPEND ${SOURCES} "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.${PROTBUFC_SOURCE_EXTENSION}")
+		list(APPEND ${HEADERS} "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.${PROTBUFC_HEADER_EXTENSION}")
+
+		add_custom_command(
+			OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.${PROTBUFC_SOURCE_EXTENSION}"
+			"${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.${PROTBUFC_HEADER_EXTENSION}"
+			COMMAND  ${PROTOBUFC_COMPILER}
+			ARGS --c_out ${CMAKE_CURRENT_BINARY_DIR} -I ${CMAKE_CURRENT_SOURCE_DIR} -I ${FIL_PATH} ${ABS_FIL}
+			DEPENDS ${ABS_FIL}
+			COMMENT "Running protobuf-c compiler on ${FIL}"
+			VERBATIM )
+	endforeach()
+	set_source_files_properties(${${SOURCES}} ${${HEADERS}} PROPERTIES GENERATED TRUE)
+	set(${SOURCES} ${${SOURCES}} PARENT_SCOPE)
+	set(${HEADERS} ${${HEADERS}} PARENT_SCOPE)
+endfunction()
+```
+
+Others complain about the incomplete documentation.
+
+I always have that impression of poor quality with *cmake*. At the point, that by far, I prefer
+*autotools*, at least with them you have plenty of projects that use them (so you can copy
+what is done in other projects). Even if they're slow and they don't work with windows.
+
+
+# Meson coming for help
+<img class='alignright' src='/images/meson.jpg' width='100px'>
+
+To start, the migration to *meson* has been super fast: a few hours and I was just discovering
+*meson*.
+
+With *cmake* there was that famous script copied from other projects ( *FindQT5* ), and that not that nice build script:
+
+```cmake
+set(MODULE_NAME "ogon-shadow")
+
+include(FindQT5)
+
+set(${MODULE_NAME}_SRCS
+        workerthread.cpp
+        sessionmodel.cpp
+        mainwindow.cpp
+        main.cpp
+)
+
+add_executable(${MODULE_NAME} ${${MODULE_NAME}_SRCS})
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${QT_EXECUTEABLE_FLAGS}")
+include_directories(${WinPR_INCLUDE_DIR})
+
+target_link_libraries(${MODULE_NAME} ${QT_LIBRARIES} winpr)
+```
+
+With *meson* it's more compact, and nicer (my opinion):
+```javascript
+qt5 = import('qt5')
+
+moc_files = qt5.preprocess(moc_headers: ['mainwindow.h', 'sessionmodel.h', 'workerthread.h'])
+
+shadow = executable('ogon-shadow',
+       'workerthread.cpp', 'sessionmodel.cpp', 'mainwindow.cpp', 'main.cpp', moc_files,
+       dependencies: [qt5_deps, winpr_deps]
+)
+```
+
+Note that with *cmake* the MOC is applied to all files in our back while with *meson*, we say it explicitly.
+
+At the end, the build script are 4 times smaller and they look nicer. And even better, without
+knowing *meson* you see what is going on. 
+
+
+# So meson is the ideal build system ?
+<img class='alignright' src='/images/mouton5pattes.jpg' width='100px'>
+
+Yes of course *meson* is the five legged sheep of the build systems !
+
+There's some (minor) drawbacks with *meson* compared to *cmake*:
+
+* *meson* is at a higher level that *cmake*, so things go very fast when you use the common way, but
+it becomes a little tricker when you want to do it your own way. For example, it's really
+fast to use the *dependency* system, but takes much more code if you wanna specify options for
+includes and libraries. Well you have the same kind of things with *cmake* scripts but it's
+a little faster;
+* *meson* developpers took the choice to use a non-Turing complete language (yes you can use this to
+show off in geeks parties), that means that you don't have any kind of macros or functions, and loops
+are restricted to *foreach*. That can lead to code duplication, anyway once you've integrated that
+constraint you deal with it;
+* you can easily generate *.pc* files for *pkgconfig* using the *pkgconfig* module, anyway it is
+missing the same for *cmake* packages. Hopefully, I did a contribution to change that with that
+[PR][PR]. That may help people to migrate projects that are basic blocks for other projects that depends
+on *cmake*. 
+
+Advantages of *meson*:
+
+* lots of projects are on the way to migrate to *meson*, so that make it a very dynamic project;
+* even if the project is quite young, it is really mature;
+* you can see what is done without beeing a *meson* expert;
+* the documentation is complete with lots of practical example, and real cases; 
+
+Bad tongs would claim that I did this post just to notify that I've contributed to *meson*, that
+would not be totally wrong. Anyway I hope it gave you some interest for that nice project.
+
+
+[meson]: https://www.youtube.com/watch?v=gHdTzdXkhRY
+[PR]: https://github.com/mesonbuild/meson/pull/3098

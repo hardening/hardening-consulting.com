@@ -64,11 +64,11 @@ function(PROTOBUFC_GENERATE_C SOURCES HEADERS)
 	set(${HEADERS} ${${HEADERS}} PARENT_SCOPE)
 endfunction()
 ```
-D'autre encore se plaignent de la documentation pas effective.
+D'autres encore se plaignent de la documentation non effective.
 
 Bref, j'ai toujours une impression de code brouillon avec *cmake*. C'est à un tel point que je préfère 
 de loin les *autotools*, au moins avec eux on a tout un corpus de programmes qui les utilisent à bon 
-escient , et on peut toujours s'y référer (enfin les copier sans autre forme de procès) pour obtenir 
+escient, et on peut toujours s'y référer (enfin les copier sans autre forme de procès) pour obtenir 
 ce qu'on veut. Outre leur lenteur, ils ne marchent pas très bien sous windows. 
 
 # Meson à la rescousse

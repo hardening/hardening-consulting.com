@@ -1,0 +1,128 @@
+<img class='alignright' src='/images/rdplogo.jpeg' width='100px'>
+
+Mieux vaut tard que jamais ! Il y a quatre ans, je faisais un [talk][talk] sur FreeRDS à la XDC 2014 
+où j'annonçais que nous en ferions l'open sourcing sans doute fin 2014, et déjà c'était quelque
+chose d'initialement prévu pour Septembre 2014. Finalement l'openSourcing tant attendu est là, mais en Avril 2018: 
+juste un tout petit peu de retard !
+
+<br style='clear: both;'>
+
+# Présentation
+
+## Du retard
+Alors évidement il s'en est passé des choses depuis fin 2014. Pour commencer, le nom du projet a changé: le
+nom _FreeRDS_ appartenait à un des membres du projet, et ce sur quoi nous avons travaillé a radicalement divergé
+de la collaboration commune des débuts, d'où la nécessité de changer de nom. Nous avions pensé à _fireRDS_, <!-- TEASER_END -->
+le dépôt de nom avait été entamé: la marque déposée peut être contestée pendant 90 jours, après elle est acquise. Et il
+se trouve qu'une énorme société (indice: j'achète désormais mes livres à la librarie) exploitant le nom _fire_ pour 
+ses logiciels, a fait de l'intimidation juridique 10 jours avant la fin de la période de contestation. 
+Après concertation, ne voulait pas faire le pot de terre contre le pot de fer,
+nous avons laissé _fireRDS_ pour finalement choisir _ogon_ comme nom de projet (feu en russe).
+
+
+## Et pendant ce temps là...
+Bien sûr, le périmètre du projet s'est aussi étoffé en 3 années de travail. Depuis 2014, nous avons ajouté entre autre:
+
+* le support du son via un module _pulseaudio_;
+* la gestion du multi-touch (écrans tactiles) sur tous les backends;
+* le support du channel _egfx_ ainsi que de l'encodage en h264 (encodage seulement en utilisant OpenH264 pour l'instant);
+* des implémentations de la redirection disque ou du presse-papier (clipboard);
+* pour le backend _Qt_, l'accélération matériel en utilisant les _DRI rendernodes_, ce qui permet d'avoir des programmes fait en _QML_;
+* et tout un tas d'autres petits détails qui ont consolidé le projet;
+
+## License
+Coté license, nous envisagions la license _Apache 2.0_ et finalement c'est license _GNU Affero_ qui a été retenue
+de manière à ce que les contributions soient forcément rendues publiques (comme c'est un logiciel serveur). 
+Coté contribution, la signature d'un [CLA][contribute] (Contributor Licence Agreement) est nécessaire pour éviter le genre de problème qu'a 
+rencontré FreeRDP à ses débuts au moment du changement de license, et pour blinder l'appartenance des contributions.
+
+## Mais c'est quoi ogon ?
+TLDR; _ogon_ est un serveur RDP pour _Linux_ comme xrdp.
+
+Pour être plus précis, il s'agit d'un environnement pour faire du _RDP_ sous Linux, c'est à dire
+qu'il y a la partie serveur RDP ainsi que toute une série de composants annexes qui permet de publier
+des applications en RDP, d'écrire des channels et d'interagir avec les clients RDP. Par rapport à _xrdp_,
+_ogon_ essaye d'implémenter tous les standards récents en laissant de coté les aspects opérations vectorielles (encore
+appelé RDP à la papa). Pour l'instant le projet ne vise que _Linux_, mais nous avons tout fait pour qu'il n'y ai
+pas d'obstacle majeur à un fonctionnement sous Windows.
+
+# Quelques aspects techniques
+## Composants
+<img src='/images/ogon-arch.png' style='padding: 20px;'>
+<br style='clear: both;'>
+Dans l'architecture _ogon_, nous avons les composants suivants:
+
+* le serveur _RDP_ (ogon-rdp-server) qui va gérer tous les aspects du protocole _RDP_;
+* le _sessionManager_ (ogon-session-manager) qui s'occupe des autorisations, authentifications et de la gestion des sessions. Le 
+serveur et le _sessionManager_ dialoguent entre eux pour gérer la session d'un utilisateur. Ce composant
+écoute aussi en _thrift_ pour l'administration des channels, des utilisateurs ou des sessions;
+* nous avons le _backend_ qui va générer le contenu visible qui sera ensuite encodé et envoyé au client par le composant serveur.
+Le backend dialogue avec le serveur _RDP_ par le biais d'une socket locale et d'une mémoire partagée;
+* enfin, on a des implémentations de channels qui peuvent être présentes dans des programmes externes (comme
+le module son pour _pulseaudio_ par exemple), elles vont dialoguer avec le _sessionManager_ pour obtenir l'ouverture d'un
+channel, et ensuite le programme dialoguera directement avec le serveur _RDP_;
+
+
+## backends
+Pour l'instant 3 backends existent:
+
+* un [backend Qt][qt] qui permet de générer le contenu visible à partir d'un application _Qt_, c'est
+par exemple de cette manière qu'est implémentée [l'écran d'authentification][greeter]: une application
+plein écran qui dialogue avec le _sessionManager_ pour authentifier l'utilisateur. Ce backend se présente sous
+la forme d'un plugin de plateforme _Qt_, on peut donc prendre n'importe quelle application _Qt_, lui demander d'utiliser
+ce _QPA_ comme moteur de rendu et d'entrée, et l'application est visible via _ogon_. Autre avantage non négligeable:
+on peut développer l'application tranquillement sur son desktop et ensuite l'exporter via _ogon_;
+* le backend [_xogon_][xogon] qui permet d'avoir un environnement _X11_ exporté à travers _ogon_. En gros
+cela permet d'avoir sa session _X_ habituelle à distance à travers du _RDP_;
+* il existe enfin un module pour faire la même chose avec _weston_ (serveur _wayland_ de référence);
+
+## Serveur RDP
+
+Par choix, le serveur RDP ne gère strictement aucune vieille opération vectorielle, tout se fait en bitmap
+plus ou moins encodé. Cela a notablement facilité l'écriture des backends qui n'ont qu'à partager un framebuffer
+avec le serveur. Dans le pire des cas, le serveur se sert de bitmap updates, mais avec la grande majorité
+des clients, il peux faire de l'encodage en _remoteFx_ ou en _H264_ qui sont beaucoup plus performant en
+terme de consommation réseau (mais pas CPU).
+
+
+# Synopsis pour un login
+<img src='/images/ogon-login.png' style='padding: 20px;'>
+<br style='clear: both;'>
+
+Rien de tel qu'un petit exemple pour voir comment les composants interagissent entre eux. Prenons l'exemple
+d'un utilisateur qui se connecte sur le serveur ogon:
+
+1. la connection entrante est acceptée, et la négociation _RDP_ est faite jusqu'à la phase d'activation;
+1. le serveur _RDP_ contacte le _sessionManager_ avec les éventuels login / mot de passe qui ont
+été envoyés lors de la négociation;
+1. si les identifiants sont corrects, on passe directement à l'étape 5. Sinon le _sessionManager_ va instancier
+un process implémentant le formulaire de login (le greeter), et demander au serveur RDP de se connecter sur ce générateur
+de contenu. L'utilisateur voit un formulaire d'identification;
+1. l'utilisateur saisi ses login / mot de passe et pour valider les identifiant, le greeter contacte 
+le _sessionManager_ (à travers la connection au serveur _RDP_). Si les identifiants sont incorrects une erreur est renvoyée et l'application
+du greeter affiche un message ad-hoc: "identifiant invalide", sinon étape suivante;
+1. le _sessionManager_ instancie l'application de session: la plupart du temps le serveur _xogon_ et demande au serveur _RDP_ 
+de se connecter dessus.
+
+J'ai simplifié à dessein le lancement du serveur X, qui est un peu plus compliqué que présenté car on 
+doit faire ça sous l'identité de l'utilisateur, et interagir avec _systemd_ pour que les autorisations correctes
+soient accordées.
+
+# Conclusion
+
+Voilà de quoi vous mettre l'eau à la bouche. Le projet [_ogon_][ogon-project] une infrastructure pour faire du
+RDP sous Linux, je n'en ai présenté que les fonctions basiques.
+Mais maintenant que le projet est public, nous attendons avec impatience les retours et les contributions.
+
+
+
+
+
+[ogon]: https://github.com/ogon-project
+[ogon-project]: https://github.com/ogon-project/ogon-project
+[talk]: https://www.youtube.com/watch?v=QYqqRLXrArE
+[contribute]: https://github.com/ogon-project/ogon-project/blob/master/CONTRIBUTING.md
+[qt]: https://github.com/ogon-project/ogon-platform-qt
+[greeter]: https://github.com/ogon-project/ogon-greeter-qt
+[xogon]: https://github.com/ogon-project/xserver-ogon
+

@@ -632,10 +632,20 @@ IMAGE_FOLDERS = {'images': 'images'}
 # FAVICONS contains (name, file, size) tuples.
 # Used for create favicon link like this:
 # <link rel="name" href="file" sizes="size"/>
-# FAVICONS = {
-#     ("icon", "/favicon.ico", "16x16"),
-#     ("icon", "/icon_128x128.png", "128x128"),
-# }
+FAVICONS = {
+	("apple-touch-icon", "/assets/images/apple-icon-57x57.png", "57x57"),
+	("apple-touch-icon", "/assets/images/apple-icon-60x60.png", "60x60"),
+	("apple-touch-icon", "/assets/images/apple-icon-72x72.png", "72x72"),
+	("apple-touch-icon", "/assets/images/apple-icon-76x76.png", "76x76"),
+	("apple-touch-icon", "/assets/images/apple-icon-114x114.png", "114x114"),
+	("apple-touch-icon", "/assets/images/apple-icon-120x120.png", "120x120"),
+	("apple-touch-icon", "/assets/images/apple-icon-144x144.png", "144x144"),
+	("apple-touch-icon", "/assets/images/apple-icon-152x152.png", "152x152"),
+	("apple-touch-icon", "/assets/images/apple-icon-180x180.png", "180x180"),
+	("apple-touch-icon", "/assets/images/apple-icon-114x114.png", "114x114"),
+
+     ("icon", "/assets/images/favicon.ico", "16x16"),     
+}
 
 # Show only teasers in the index pages? Defaults to False.
 INDEX_TEASERS = True

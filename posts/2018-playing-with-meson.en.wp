@@ -19,12 +19,12 @@ some cmake involved I'm reticent to go in that work.
 
 <!-- TEASER_END -->
 
-In most projects, you see the *good* cmake scripts that are copied from a project to another to do
-do the same task: for instance detecting Qt and create some targets to run the MOC on files, dealing with
+In most projects, you see the *good* cmake scripts that are copied from a project to another to perform
+the same tasks: for instance detecting Qt and creating some targets to run the MOC on files, dealing with
 Qt's resources, ...
 
-Moreover as *cmake* existed for some year, build files have to deal with the version of *cmake*, that
-is used, to activate or workaround functionnalities that may be present or not. 
+Moreover as *cmake* existed for some years, build files have to deal with the version of *cmake* that
+is used to activate or workaround functionnalities that may be present or not. 
 
 This must be the *cmake* scripting language (or bad practises à la PHP), but often you can
 see projects that abuse of the evaluation capabilities (double ${):
@@ -113,9 +113,9 @@ shadow = executable('ogon-shadow',
 )
 ```
 
-Note that with *cmake* the MOC is applied to all files in our back while with *meson*, we say it explicitly.
+Note that with *cmake* the MOC is applied to all files in our back, while with *meson* we say it explicitly.
 
-At the end, the build script are 4 times smaller and they look nicer. And even better, without
+At the end, the build scripts are 4 times smaller and they look nicer. And even better, without
 knowing *meson* you see what is going on. 
 
 
@@ -127,9 +127,9 @@ Yes of course *meson* is the five legged sheep of the build systems !
 There's some (minor) drawbacks with *meson* compared to *cmake*:
 
 * *meson* is at a higher level that *cmake*, so things go very fast when you use the common way, but
-it becomes a little tricker when you want to do it your own way. For example, it's really
+it becomes a little tricker when you want to do it your own style. For example, it's really
 fast to use the *dependency* system, but takes much more code if you wanna specify options for
-includes and libraries. Well you have the same kind of things with *cmake* scripts but it's
+includes and libraries. Well, you have the same kind of things with *cmake* scripts but it's
 a little faster;
 * *meson* developpers took the choice to use a non-Turing complete language (yes you can use this to
 show off in geeks parties), that means that you don't have any kind of macros or functions, and loops

@@ -31,13 +31,13 @@ Bien sûr, le périmètre du projet s'est aussi étoffé en 3 années de travail
 * et tout un tas d'autres petits détails qui ont consolidé le projet;
 
 ## License
-Coté license, nous envisagions la license _Apache 2.0_ et finalement c'est license _GNU Affero_ qui a été retenue
+Coté license, nous envisagions la license _Apache 2.0_ et finalement c'est la license _GNU Affero_ qui a été retenue
 de manière à ce que les contributions soient forcément rendues publiques (comme c'est un logiciel serveur). 
 Coté contribution, la signature d'un [CLA][contribute] (Contributor Licence Agreement) est nécessaire pour éviter le genre de problème qu'a 
 rencontré FreeRDP à ses débuts au moment du changement de license, et pour blinder l'appartenance des contributions.
 
 ## Mais c'est quoi ogon ?
-TLDR; _ogon_ est un serveur RDP pour _Linux_ comme xrdp.
+TLDR; _ogon_ est un serveur RDP pour _Linux_ comme _xrdp_.
 
 Pour être plus précis, il s'agit d'un environnement pour faire du _RDP_ sous Linux, c'est à dire
 qu'il y a la partie serveur RDP ainsi que toute une série de composants annexes qui permet de publier
@@ -98,9 +98,9 @@ d'un utilisateur qui se connecte sur le serveur ogon:
 1. si les identifiants sont corrects, on passe directement à l'étape 5. Sinon le _sessionManager_ va instancier
 un process implémentant le formulaire de login (le greeter), et demander au serveur RDP de se connecter sur ce générateur
 de contenu. L'utilisateur voit un formulaire d'identification;
-1. l'utilisateur saisi ses login / mot de passe et pour valider les identifiant, le greeter contacte 
+1. l'utilisateur saisi ses login / mot de passe et pour valider les identifiant, le _greeter_ contacte 
 le _sessionManager_ (à travers la connection au serveur _RDP_). Si les identifiants sont incorrects une erreur est renvoyée et l'application
-du greeter affiche un message ad-hoc: "identifiant invalide", sinon étape suivante;
+du _greeter_ affiche un message ad-hoc: "identifiant invalide". Sinon étape suivante;
 1. le _sessionManager_ instancie l'application de session: la plupart du temps le serveur _xogon_ et demande au serveur _RDP_ 
 de se connecter dessus.
 

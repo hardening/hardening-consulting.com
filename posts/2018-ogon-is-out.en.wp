@@ -1,0 +1,117 @@
+<img class='alignright' src='/images/rdplogo.jpeg' width='100px'>
+
+Better late than never. Four years ago I was giving a [talk][talk] on FreeRDS at the XDC 2014 and I 
+was announcing that we would opensource the project at the end of the year. The opensourcing
+is finally here but in April 2018, you can observe a kind of delay ! 
+
+<br style='clear: both;'>
+
+# About
+
+## We were late
+So obviously lots of things have occured since 2014. First the project's name has changed: it was initially
+_FreeRDS_ but the name was owned by one of the project's member. And our fork has diverged a lot, so
+there was the necessity for a new name. We thought at _fireRDS_,  <!-- TEASER_END -->
+but we had some legal bothering with a giant company exploiting the name _fire_. So we've finally decided to take the
+name _ogon_ (fire in russian).
+
+
+## During that time...
+
+Of course the project has gained some new features since 2014:
+* sound support with _pulseaudio_ module;
+* support for multi-touch on all backends;
+* support for the _egfx_ channel and h264 encoding (using _openH264_);
+* some implementations for clipboard and disk redirection;
+* for the _Qt_ backend: hardware acceleration using DRI rendernodes, so that allows to have _Qt_ applications 
+done with _QML_;
+* and lots of other improvements...
+
+## License
+The initial planned license was _Apache 2.0_ and finally we've choosen _GNU Affero_. So that server-side
+contribution have to be public too. When contributing, you have to sign a [CLA][contribute] (Contributor Licence Agreement).
+
+
+## Hey but what is ogon ?
+TLDR; _ogon_ is an _RDP_ server for _linux_ just like _xrdp_.
+
+More precisely it's a framework to work with _RDP_ under _linux_, that means that you have the _RDP_
+server and of components to publish application throught _RDP_, writing channels and interacting
+with _RDP_ clients. Compared to _Xrdp_, _ogon_ aims to implement all the new shiny RDP standards, leaving the
+old vector operations. It works on _linux_ only for now, but it is designed to work on _windows_ too. 
+
+
+
+# Technical design
+## Components
+<img src='/images/ogon-arch.png' style='padding: 20px;'>
+<br style='clear: both;'>
+
+In the  _ogon_ framework, we have the following components:
+
+* the _RDP_ server (ogon-rdp-server) that will do all the _RDP_ stuffs;
+* the _sessionManager_ (ogon-session-manager) which will handle authorisations, authentications and session management. The 
+server and the _sessionManager_ communicate with each other to handle the user session. It also have a _thrift_ listener to 
+administrate channels, users and sessions from external programs;
+* the _backend_ generates the visual content that the server will encode and send to the
+client. The _backend_ talks with the server using local socket and a shared memory;
+* finally we have channel implementations as independant programs (like the _pulseaudio_ module for instance),
+they will communicate with the _sessionManager_ to open the channel, and then the program will talk directly with 
+the _RDP_ server.
+
+
+## backends
+Today we have 3 backends:
+
+* a [Qt backend][qt] that allows to generate the visual content with from a _Qt_ application, the greeter
+is implemented this way: a fullscreen application showing a login form that communicates with the
+_sessionManager_ to authenticate the user. This backend is a QPA, so you can virtually take any _Qt_
+application and use it as a content provider for _ogon_;
+* the [_xogon_][xogon] backend allows to have a _X11_ environment exported throught _ogon_. You can have your
+usual _X_ session with associated programs exported via _RDP_;
+* and finally we have the same with _weston_ (the reference compositor for _wayland_);
+
+
+## RDP server
+
+By design the _ogon_ RDP server doesn't handle any vector operation, everything is done using encoded bitmaps. This
+has simplified the backend implementations that just have to share framebuffer with the RDP server. In worst case
+the server uses raw bitmap updates, but with most RDP clients it can use _remoteFx_ or _H264_ codec which use a lot less 
+bandwidth (but at the cost of more CPU).
+
+
+# Logon sequence
+<img src='/images/ogon-login.png' style='padding: 20px;'>
+<br style='clear: both;'>
+
+Let's see what happens during a logon sequence to see how components interact:
+
+
+1. the incoming connection is accepted and the negociation is done up to the activation sequence;
+1. the _RDP_ server contacts the _sessionManager_ with the optionnal credentials retrieved during the
+negociation;
+1. if the credentials are correct, goto step 5. Otherwise the _sessionManager_ instanciates a greeter process and
+asks the RDP server to connect on this content provider. The user sees a login form;
+1. user gives login and password, and throught the _RDP_ server, the greeter contacts the _sessionManager_ to authenticate the
+user. If the credentials are wrong the greeter shows the correponding message, otherwise goto next step;
+1. the _sessionManager_ instaciates a session application, _xogon_ most of the time and asks the _RDP_ server to connect
+on it.
+
+I've simplified the launching of the X server, in practice it's more complicated as you have to impersonnate to the
+user and interact with _systemd_ to get a correct environment, but you get the idea.
+
+
+# To conclude
+
+So this is just an appetizer. the [_ogon_][ogon-project] project is a framework to do some _RDP_ under _linux_ with lots of stuffs,
+I've shown only the basics. But now that the project is public, feel free to test and report. 
+
+
+[ogon]: https://github.com/ogon-project
+[ogon-project]: https://github.com/ogon-project/ogon-project
+[talk]: https://www.youtube.com/watch?v=QYqqRLXrArE
+[contribute]: https://github.com/ogon-project/ogon-project/blob/master/CONTRIBUTING.md
+[qt]: https://github.com/ogon-project/ogon-platform-qt
+[greeter]: https://github.com/ogon-project/ogon-greeter-qt
+[xogon]: https://github.com/ogon-project/xserver-ogon
+

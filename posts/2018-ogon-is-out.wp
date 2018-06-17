@@ -98,7 +98,7 @@ d'un utilisateur qui se connecte sur le serveur ogon:
 1. si les identifiants sont corrects, on passe directement à l'étape 5. Sinon le _sessionManager_ va instancier
 un process implémentant le formulaire de login (le greeter), et demander au serveur RDP de se connecter sur ce générateur
 de contenu. L'utilisateur voit un formulaire d'identification;
-1. l'utilisateur saisi ses login / mot de passe et pour valider les identifiant, le _greeter_ contacte 
+1. l'utilisateur saisi ses login / mot de passe et pour valider les identifiants, le _greeter_ contacte 
 le _sessionManager_ (à travers la connection au serveur _RDP_). Si les identifiants sont incorrects une erreur est renvoyée et l'application
 du _greeter_ affiche un message ad-hoc: "identifiant invalide". Sinon étape suivante;
 1. le _sessionManager_ instancie l'application de session: la plupart du temps le serveur _xogon_ et demande au serveur _RDP_ 
@@ -110,7 +110,7 @@ soient accordées.
 
 # Conclusion
 
-Voilà de quoi vous mettre l'eau à la bouche. Le projet [_ogon_][ogon-project] une infrastructure pour faire du
+Voilà de quoi vous mettre l'eau à la bouche. Le projet [_ogon_][ogon-project] est toute une infrastructure pour faire du
 RDP sous Linux, je n'en ai présenté que les fonctions basiques.
 Mais maintenant que le projet est public, nous attendons avec impatience les retours et les contributions.
 

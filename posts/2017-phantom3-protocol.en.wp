@@ -71,7 +71,7 @@ The payload has the following format:
 -------------------------------------------------------------------------
 ```
 
-_sourceType_ contains the source source of the message, this field contains
+_sourceType_ contains the source of the message, this field contains
 a main type in the 5 lower bits and a subType in the 3 upper bits.
 
 _targetType_ has the same format for the target of the message.

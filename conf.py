@@ -21,7 +21,7 @@ BLOG_AUTHOR = "David FORT"  # (translatable)
 BLOG_TITLE = "Hardening consulting"  # (translatable)
 # This is the main URL for your site. It will be used
 # in a prominent link
-SITE_URL = "http://www.hardening-consulting.com/"
+SITE_URL = "https://www.hardening-consulting.com/"
 # This is the URL where Nikola's output will be deployed.
 # If not set, defaults to SITE_URL
 # BASE_URL = "http://getnikola.com/"
@@ -946,7 +946,7 @@ BODY_END = """
     var u="//piwik.hardening-consulting.com/";
     _paq.push(['setTrackerUrl', u+'piwik.php']);
     var siteId;
-    if (location.host == 'hardening-consulting.fr') siteId = 1;
+    if (location.host.endsWith('hardening-consulting.fr')) siteId = 1;
     else if (location.host == '127.0.0.1:8000') siteId = 3
     else siteId = 2;
     _paq.push(['setSiteId', siteId]);

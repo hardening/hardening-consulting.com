@@ -1,0 +1,126 @@
+&nbsp; 
+
+<img class="alignright" src="/images/twisted.png" width="100px">
+
+En travaillant sur [topka][topka], j'ai eu l'occasion d'utiliser [twisted][twisted]. Les tutoriaux de twisted
+sont bien fait, on a pleins d'exemples concrets, malgrés tout après
+avoir acquis un peu d'expérience avec le framework, j'ai eu envie d'écrire un petit article sur le
+sujet.
+
+<br style='clear: both;'>
+
+# Utilisation des deferred
+
+Quand on utilise twisted, il peut arriver qu'on se retrouve avec un résultat qui puisse être une valeur
+ou bien un `Deferred`. C'est le cas s'il est possible que le résultat soit disponible directement, ou bien qu'on
+doivent attendre. On peut avoir ce genre de code:
+
+```python
+import twisted.internet.defer as defer
+
+def myFunc():
+	def treatRet():
+		...
+		
+	ret = functionThatProcess(...)
+	if isinstance(ret, defer.Deferred):
+		ret.addCallback(treatRet)
+	else:
+		ret = treatRet(ret)
+		
+	return ret
+```
+<!-- TEASER_END -->
+
+Avec l'expérience, je me suis rendu compte qu'il fallait mieux aborder la chose en considérant que le
+résultat de `functionThatProcess` était _toujours_ un `Deferred`. D'ailleurs on voit ici que les appelants
+de `myFunc` vont aussi tous devoir gérer les deux cas: retour sous forme de valeur ou de `Deferred`.
+
+C'est là que les appels `defer.succeed` et `defer.fail` arrivent à la rescousse. Petit exemple:
+```python
+>>> import twisted.internet.defer as defer
+>>> d = defer.succeed('value')
+>>> def cb(v):
+...     print "value=", v
+...     return v
+... 
+>>> d.addCallback(cb)
+value= value
+<Deferred at 0x7fda5d44b9e0 current result: 'value'>
+>>> 
+```
+
+On voit que sur un `defer.succeed`, quand on ajoute une callbacks (ou une errback pour le `defer.fail`), elle est appelée 
+instantanément. Ce qui permet de changer le code original en:
+```python
+import twisted.internet.defer as defer
+
+def myFunc():
+	def treatRet():
+		...
+		
+	ret = functionThatProcess(...)
+	ret.addCallback(treatRet)		
+	return ret
+```
+
+Dans `functionThatProcess` si la valeur retour est accessible directement, il suffira de
+retourner un `defer.succeed(value)`. Et cette fois, on accumule des callbacks sur le `Deferred` retourné, et
+soit toute la chaine sera exécutée au moment de la disponibilité du résultat, soit les callbacks sont exécutées
+dés qu'elles sont rajoutées.
+
+
+# Chainer les deferred
+
+J'ai aussi été confronté à un problème qui doit être assez courant: lors d'un appel sur un serveur
+je renvoyais un `Deferred` dont la callback était appelée quand on avait réussi à lancer un processus. Mais je
+voulais que la chaîne de callbacks ne continue que dés que le processus en question avait créé un fichier (et mettre un timeout
+sur cette attente), ce qui
+imposait donc de faire une sorte d'attente dans la callback. Évidement si on fait ça de manière active, le reactor ne 
+marche plus et on a cassé le coté asynchrone. Une possibilité est de faire l'exécution dans un thread à part (`reactor.callInThread`).
+Mais le plus élégant, c'est encore de retourner un `Deferred` dans la callback, de cette manière l'exécution des callbacks est interrompue 
+jusqu'à ce que le `Deferred` retourné soit lui-même appelé:
+
+```python
+from twisted.internet import defer, reactor
+
+def cb1(v):
+	print "in callback 1 with value=", v
+	
+	d = defer.Deferred()
+	reactor.callLater(1.0, d.callback, "modified")
+	return d
+	
+def cb2(v):
+	print "in callback 2 with value=", v
+	reactor.stop()
+	
+delayed = defer.Deferred()
+delayed.addCallback(cb1).addCallback(cb2)
+reactor.callLater(2.0, delayed.callback, 'val')
+reactor.run()
+```
+
+Dans cet exemple la sortie est:
+```console
+(attente de 2 secondes)
+in callback 1 with value= val
+(attente d'une seconde)
+in callback 2 with value= modified
+```
+
+On voit bien que l'exécution des callbacks est suspendue le temps que le `Deferred` renvoyé
+par `cb1` soit résolu. Et d'ailleurs, c'est son résultat qui est passé à la callback 
+suivante.  
+
+
+# Conclusion
+
+La programmation avec twisted est quelque fois un peut compliquée, avec les callbacks, on 
+peut terminer avec des programmes un peu spaghetti. Néanmoins on peut quand même y trouver une certaine 
+élégance. 
+Je pense que quand je serais plus au point sur le sujet, il serait intéressant de faire
+un article sur les techniques de debuggage avec twisted.
+
+[topka]: https://github.com/hardening/topka
+[twisted]: https://www.twistedmatrix.com/

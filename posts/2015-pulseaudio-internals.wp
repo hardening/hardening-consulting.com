@@ -66,7 +66,7 @@ dans le suite: que ce soit pour envoyer des samples de sons ou bien gérer les r
 Je me suis beaucoup inspiré des sinks existants pour obtenir quelque chose de fonctionnel. Je n'en
 ai pas encore parlé, mais le démarrage du son est aussi guidé par une notification *DBus* qui
 va nous indiquer qu'une session vient de se connecter. Donc on a aussi une communication *DBus*
-qui est gérée dans la *main loop*, et qui créée la sortie au bon moment.
+qui est gérée dans la *main loop*, et qui crée la sortie au bon moment.
 
 # Perspectives et liens
 

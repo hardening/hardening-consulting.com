@@ -103,34 +103,28 @@
             </ul>
         % else:
             % if permalink.endswith(url):                 
-				<li class="active"><a href="${permalink}">${text}</a></li>
+				<li class="nav-item active px-1"><a class='nav-link' href="${permalink}">${text}</a></li>
             %else:
-                <li><a href="${url}">${text}</a></li>
+                <li class='nav-item px-1'><a class='nav-link' href="${url}">${text}</a></li>
             %endif
         % endif
     %endfor
 </%def>
 
 <%def name="html_translations()">
-	<li class="dropdown">
-		<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+	<li class="nav-item dropdown">
+		<a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 		${messages("LANGUAGE", lang)}&nbsp;
 		<img src="/assets/images/${lang}.png">
 		<b class="caret"></b>
 		</a>
 		
-		<ul class="dropdown-menu">	      
+		<div class="dropdown-menu">	      
 		    %for langname in translations.keys():
-	            <li
-			        %if langname == lang:
-			        	class='active'
-		        	%endif    
-	            >
-	            <a href="${_link("index", None, langname)}" rel="alternate" hreflang="${langname}">
-	            	<img src="/assets/images/${langname}.png"> ${messages("LANGUAGE", langname)}
+	            <a class='dropdown-item' href="${_link("index", None, langname)}" rel="alternate" hreflang="${langname}">
+	            	<img src="/assets/images/${langname}.png">&nbsp;&nbsp;${messages("LANGUAGE", langname)}
 	            </a>
-	            </li>
 		    %endfor
-		</ul>
+		</div>
 	</li>
 </%def>

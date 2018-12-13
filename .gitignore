@@ -1,4 +1,5 @@
 state_data.json
+cache/
 output/
 .doit.db
 *.pyc

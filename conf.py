@@ -129,36 +129,25 @@ TRANSLATIONS_PATTERN = "{path}.{lang}.{ext}"
 
 NAVIGATION_LINKS = {
     DEFAULT_LANG: (
-        ('/stories/projets.html', 'Projets'),
+        ('/pages/projets/index.html', 'Projets'),
         ('/archive.html', 'Archives'),
         ('/categories/index.html', 'Tags'),
-        ('/stories/presse.html', 'Presse'),
-        ('/stories/a-propos.html', 'À propos'),
+        ('/pages/presse/index.html', 'Presse'),
+        ('/pages/a-propos/index.html', 'À propos'),
     ),
     "en": (
-        ('/en/stories/projects.html', 'Projects'),
+        ('/en/pages/projects/index.html', 'Projects'),
         ('/en/archive.html', 'Archives'),
         ('/en/categories/index.html', 'Tags'),
-        ('/en/stories/press.html', 'Press'),
-        ('/en/stories/about.html', 'About'),
+        ('/en/pages/press/index.html', 'Press'),
+        ('/en/pages/about/index.html', 'About'),
     ),
 }
 
-'''
-NAVIGATION_LINKS = {
-    DEFAULT_LANG: (
-        ("/archive.html", "Archives"),
-        ("/categories/index.html", "Étiquettes"),
-        ("/rss.xml", "Flux RSS"),
-    ),
-
-    "en": (
-        ("/en/archive.html", "Archive"),
-        ("/en/categories/index.html", "Tags"),
-        ("/en/rss.xml", "RSS feed"),
-    ),
+NAVIGATION_ALT_LINKS = {
+    DEFAULT_LANG: {}
 }
-'''
+
 # Name of the theme to use.
 THEME = "hardening"
 
@@ -171,7 +160,31 @@ THEME = "hardening"
 # (e.g. 'Europe/Zurich')
 # Also, if you want to use a different time zone in some of your posts,
 # you can use the ISO 8601/RFC 3339 format (ex. 2012-03-30T23:00:00+02:00)
-TIMEZONE = "UTC"
+TIMEZONE = "Europe/Paris"
+
+# Primary color of your theme. This will be used to customize your theme.
+# Must be a HEX value.
+THEME_COLOR = '#5670d4'
+
+# Theme configuration. Fully theme-dependent. (translatable)
+# Examples below are for bootblog4.
+THEME_CONFIG = {
+    DEFAULT_LANG: {
+        # Show the latest featured post in a large box, with the previewimage as its background.
+        'featured_large': False,
+        # Show the first (remaining) two featured posts in small boxes.
+        'featured_small': False,
+        # Show featured posts on mobile.
+        'featured_on_mobile': True,
+        # Show image in `featured_large` on mobile.
+        # `featured_small` displays them only on desktop.
+        'featured_large_image_on_mobile': True,
+        # Strip HTML from featured post text.
+        'featured_strip_html': False,
+        # Contents of the sidebar, If empty, the sidebar is not displayed.
+        'sidebar': ''
+    }
+}
 
 # If you want to use ISO 8601 (also valid RFC 3339) throughout Nikola
 # (especially in new_post), set this to True.
@@ -237,9 +250,9 @@ POSTS = (
     ("posts/*.wp", "posts", "post.tmpl"),
 )
 PAGES = (
-    ("stories/*.rst", "stories", "story.tmpl"),
-    ("stories/*.txt", "stories", "story.tmpl"),
-    ("stories/*.wp", "stories", "story.tmpl"),
+    ("pages/*.rst", "pages", "story.tmpl"),
+    ("pages/*.txt", "pages", "story.tmpl"),
+    ("pages/*.wp", "pages", "story.tmpl"),
 )
 
 # One or more folders containing files to be copied as-is into the output.
@@ -262,8 +275,8 @@ PAGES = (
 # 'markdown' is MarkDown
 # 'html' assumes the file is HTML and just copies it
 COMPILERS = {
-    "rest": ('.rst', '.txt'),
-    "markdown": ('.md', '.mdown', '.markdown', '.wp'),
+    "rest": ('.rst', '.txt',),
+    "markdown": ('.md', '.mdown', '.markdown', '.wp',),
     "textile": ('.textile',),
     "txt2tags": ('.t2t',),
     "bbcode": ('.bb',),
@@ -779,7 +792,7 @@ COMMENT_SYSTEM_ID = "davidfort"
 # This can be disabled on a per-page/post basis by adding
 #    .. pretty_url: False
 # to the metadata
-# PRETTY_URLS = False
+PRETTY_URLS = False
 
 # If True, publish future dated posts right away instead of scheduling them.
 # Defaults to False.

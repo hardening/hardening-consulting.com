@@ -116,8 +116,8 @@ suivante.
 
 # Conclusion
 
-La programmation avec twisted est quelque fois un peut compliquée, avec les callbacks, on 
-peut terminer avec des programmes un peu spaghetti. Néanmoins on peut quand même y trouver une certaine 
+La programmation avec twisted est quelque fois un peu compliqué, avec les callbacks, on 
+peut terminer avec des programmes spaghetti. Néanmoins on peut quand même y trouver une certaine 
 élégance. 
 Je pense que quand je serais plus au point sur le sujet, il serait intéressant de faire
 un article sur les techniques de debuggage avec twisted.

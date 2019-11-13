@@ -1,0 +1,78 @@
+<img class="alignright" src="/images/kvm_logo.png" width="100px">
+Que les VMs windows sont lentes sous KVM ! Quand on travaille sur FreeRDP on est inévitablement
+obligé d'avoir des VMs sous windows pour tester que les vieilles features marchent encore,
+ou bien pour pouvoir essayer ces nouveautés fantastiques (oui j'aime les licornes).
+<br style='clear: both;'>
+<!-- TEASER_END -->
+
+# Installer les drivers virtIO
+
+La solution est évidement d'installer les bons drivers. Pour commencer il faut récupérer une [ISO][drivers] 
+contenant toute une série de virtio drivers pour windows. On configure l'ISO dans le lecteur CDROM de la VM et c'est parti !
+
+## Installer les drivers de base
+<img class="aligncenter" src="/images/vm/ballooning+serial.png">
+<br style='clear: both;'>
+
+Déjà, une fois qu'on a démarré sa VM, on peux commencer par aller faire un tour dans le gestionnaire de périphériques.
+Là, on trouve déjà des périphériques en manque de drivers: il s'agit du ballooning et du port série. Il suffit de demander à mettre à jour le pilote,
+on demande à chercher sur le CDROM. Et normalement on a 2 nouveaux périphériques fonctionnels:
+
+<img class="aligncenter" src="/images/vm/ballooning+serial-installed.png">
+<br style='clear: both;'>
+
+Pour ceux qui se demanderait à quoi sert le ballooning, ça sert à ce que l'OS de VM soit au courant qu'il est virtualisé et qu'il
+évite d'utiliser toute sa mémoire disponible si ce n'est pas nécessaire. Contrairement à ce qu'on peut entendre souvent, de la mémoire 
+qui n'est pas utilisée, de la RAM libre, c'est de la mémoire perdue, car elle aurait pû/dû servir par exemple à faire du cache disque. Donc si
+l'OS invité n'est pas au courant, il va prendre ses aises.
+
+## L'affichage
+Comme j'en avais parlé dans un [article][multimon] précédent sur le multi-écran dans les VMs, il est sympathique d'installer
+le drivers `QXL` avec l'affichage spice. Dans la configuration de la VM, on commence par sélectionner `QXL` dans le type de carte vidéo. Ensuite de la même 
+manière, on demande à mettre à jour le drivers de la carte graphique, ça flicke un peu lors de l'installation, et puis
+on a plus de mode vidéos et l'affichage semble plus véloce:
+
+<img class="aligncenter" src="/images/vm/video.png">
+<br style='clear: both;'>
+
+## Le réseau
+De la même manière, on peut changer la configuration de la VM et mettre une carte de type `virtio`:
+
+<img class="aligncenter" src="/images/vm/network.png">
+<br style='clear: both;'>
+ 
+On repasse par la case _Gestionnaire de périphérique_, puis _installer le drivers_.
+
+## Driver disque
+
+Le driver `virtio` qui offre de loin, le meilleur gain de performances, c'est celui de disque: il est tellement plus simple de demander
+directement des blocs par un canal mémoire plutôt que de passer par une coûteuse couche d'émulation de controleur IDE. 
+Seulement comment installer le drivers `virtio` du disque dur alors qu'on démarre à partir de ce disque dur ? 
+On a un problème de poule et d'oeuf !
+
+La ruse va consister à rajouter un disque dur bidon, et à le mettre avec le drivers `virtio`. On ne touche pas au disque dur principal pour l'instant:
+
+<img class="aligncenter" src="/images/vm/extra-disk.png">
+<br style='clear: both;'>
+
+ Une fois la VM démarrée, on installe le drivers pour ce nouveau disque dur. L'installation du drivers est faite pour tout
+ le système, du coup au rédémarrage quand on aura changé le type du disque dur principal de `IDE` vers `virtio`, on aura un drivers pour gérer le 
+ disque dur principal. On peut donc éteindre la VM, supprimer le disque dur bidon et changer le type de bus du disque dur principal vers ̀`virtio`.
+ 
+ Le premier redémarrage est un peu long, comme à chaque installation de nouveaux périphériques, mais la VM est quand même
+ très sensiblement plus rapide.
+
+## Essayer d'autres périphériques
+
+QEmu offre d'autre type de périphériques qui sont rigolos à essayer. Il y a le générateur de nombres aléatoires pointant vers `/dev/urandom` pour partager l'entropie
+avec la machine hôte. 
+
+Il y a les périphériques watchdog qui permette de redémarrer la VM si l'OS rame trop.
+
+# Conclusion
+Plus d'excuses pour avoir une VM windows qui rame, et si c'est encore le cas c'est que ça ne vient pas de la couche d'émulation...
+
+
+
+[drivers]: https://docs.fedoraproject.org/en-US/quick-docs/creating-windows-virtual-machines-using-virtio-drivers/index.html
+[multimon]: /posts/20170302-multi-ecran-rdp.html

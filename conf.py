@@ -129,18 +129,18 @@ TRANSLATIONS_PATTERN = "{path}.{lang}.{ext}"
 
 NAVIGATION_LINKS = {
     DEFAULT_LANG: (
-        ('/pages/projets/index.html', 'Projets'),
+        ('/pages/projets.html', 'Projets'),
         ('/archive.html', 'Archives'),
         ('/categories/index.html', 'Tags'),
-        ('/pages/presse/index.html', 'Presse'),
-        ('/pages/a-propos/index.html', 'À propos'),
+        ('/pages/presse.html', 'Presse'),
+        ('/pages/a-propos.html', 'À propos'),
     ),
     "en": (
-        ('/en/pages/projects/index.html', 'Projects'),
+        ('/en/pages/projects.html', 'Projects'),
         ('/en/archive.html', 'Archives'),
         ('/en/categories/index.html', 'Tags'),
-        ('/en/pages/press/index.html', 'Press'),
-        ('/en/pages/about/index.html', 'About'),
+        ('/en/pages/press.html', 'Press'),
+        ('/en/pages/about.html', 'About'),
     ),
 }
 
@@ -988,7 +988,7 @@ BODY_END = """
 
 # If you hate "Filenames with Capital Letters and Spaces.md", you should
 # set this to true.
-UNSLUGIFY_TITLES = True
+FILE_METADATA_UNSLUGIFY_TITLES = True
 
 # Additional metadata that is added to a post when creating a new_post
 # ADDITIONAL_METADATA = {}

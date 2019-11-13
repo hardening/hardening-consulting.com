@@ -1,0 +1,121 @@
+<img class="alignright" src="/images/twisted.png" width="100px">
+
+While working on [topka][topka], I've used the [twisted][twisted] framework. Twisted tutorials are really
+good with lots of practical examples, anyway after using the framework for weeks, I gain enough
+experience to write a post about some tricks I've discovered.
+
+Disclaimer: you will not find here something that is not already in the [twisted docs][docs]. 
+<br style='clear: both;'>
+
+# Using deferred
+
+While using _twisted_, it happens that you can be a situation where you can either return a 
+final value or do the computation asynchronously and return a `Deferred`. The code looks like:
+
+```python
+import twisted.internet.defer as defer
+
+def myFunc():
+	def treatRet():
+		...
+		
+	ret = functionThatProcess(...)
+	if isinstance(ret, defer.Deferred):
+		ret.addCallback(treatRet)
+	else:
+		ret = treatRet(ret)
+		
+	return ret
+```
+<!-- TEASER_END -->
+
+I figured that usually it's a good idea to change the code so that the result of `functionThatProcess` 
+is always a `Deferred`. It's generally a good idea because otherwise all the callers of `myFunc` will
+also have to handle the two cases of a final result or a ̀`Deferred`.
+
+And there comes `defer.succeed` and `defer.fail`:
+
+```python
+>>> import twisted.internet.defer as defer
+>>> d = defer.succeed('value')
+>>> def cb(v):
+...     print "value=", v
+...     return v
+... 
+>>> d.addCallback(cb)
+value= value
+<Deferred at 0x7fda5d44b9e0 current result: 'value'>
+>>> 
+```
+
+When the result is `defer.succeed`, if you add a callback (or an errback for `defer.fail`), it will be called immediately.
+And so the original code becomes:
+```python
+import twisted.internet.defer as defer
+
+def myFunc():
+	def treatRet():
+		...
+		
+	ret = functionThatProcess(...)
+	ret.addCallback(treatRet)		
+	return ret
+```
+
+In `functionThatProcess` if the return value can be computed directly, we will just return `defer.succeed(value)`, and
+callbacks will be executed as soon as they are added. Or it's an asynchronous computation and the callbacks will be proceeded 
+when the value will become available. The bonus is that now we have only one code path.
+
+
+# Chaining deferred
+
+Sometime you can have complex workflows that requires to launch things, wait for event, ...
+And so you can be in a situation where you're in a callback but you would still need to wait
+for another event to complete. Of course you can't wait in a callback because it would busy-lock the
+reactor. A possibility is to execute things in a thread using `reactor.callInThread`. Anyway the most
+elegant solution is when the callback returns a `Deferred`, the callback chain execution will be stopped
+until this `Deferred` has completed:
+ 
+
+```python
+from twisted.internet import defer, reactor
+
+def cb1(v):
+	print "in callback 1 with value=", v
+	
+	d = defer.Deferred()
+	reactor.callLater(1.0, d.callback, "modified")
+	return d
+	
+def cb2(v):
+	print "in callback 2 with value=", v
+	reactor.stop()
+	
+delayed = defer.Deferred()
+delayed.addCallback(cb1).addCallback(cb2)
+reactor.callLater(2.0, delayed.callback, 'val')
+reactor.run()
+```
+
+The output is:
+```console
+(2 seconds delay)
+in callback 1 with value= val
+(1 second delay)
+in callback 2 with value= modified
+```
+
+We can see that the calback chain is suspended until the returned `Deferred` has completed.
+You can also notice that it's the return value of the `Deferred` that is passed to the callback
+chain.
+
+
+# To conclude
+
+Using twisted with its callback style programming can quickly lead to a spaghetti program. Anyway
+one can find some piece of elegance in this way of doing.
+
+
+[topka]: https://github.com/hardening/topka
+[twisted]: https://www.twistedmatrix.com/
+[docs]: https://twistedmatrix.com/documents/current/core/howto/index.html

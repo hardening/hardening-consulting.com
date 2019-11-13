@@ -1,0 +1,53 @@
+<img class="alignright" src="/images/FreeRDP.png" width="100px">
+Souvent en utilisant _FreeRDP_, on se retrouve à devoir augmenter le niveau des traces et à collecter
+un peu plus de logs que d'ordinaire. Et évidement la plupart du temps, ça ne tient pas dans l'historique
+du terminal, ou bien on veut que ça se fasse rapidement (l'affichage console peut vraiment
+ralentir _FreeRDP_). On peut aussi être sur une machine à distance, et vouloir récupérer tout ça via le réseau.
+
+<br style='clear: both;'>
+Comme à chaque fois que je veux utiliser les capacités de _WLog_ (le système de logs de _FreeRDP_), je dois aller regarder le code source,
+je me suis dit qu'un petit billet sur le sujet serait l'occasion idéale de se souvenir de tout ça. 
+<!-- TEASER_END -->
+
+# Utilisation de _Wlog_
+
+La verbosité des logs est controlée par la variable d'environnement `WLOG_LEVEL` (dans FreeRDP on peut aussi se servir
+du paramètre en ligne de commande `/log-level`). On peut y mettre les valeurs `FATAL`, `ERROR`, `WARN`, `INFO`, `DEBUG` 
+ou `TRACE`.
+
+Le système fonctionne comme _log4j_ avec des _appenders_, on dispose de plusieurs type d'appenders: fichier, sortie standard,
+réseau, syslog ou systemd. Le type d'appender instancié est donné par la variable d'environnement `WLOG_APPENDER`.
+
+## Stockage en fichier
+
+Pour cela, on utilise un appender de type `FILE`, et les variables d'environnement `WLOG_FILEAPPENDER_OUTPUT_FILE_PATH` et 
+`WLOG_FILEAPPENDER_OUTPUT_FILE_NAME` donnent respectivement le répertoire et le nom du fichier vers lequel seront stockés les 
+logs.
+
+Par exemple, pour des logs dans `/tmp/output.log`: 
+```shell
+WLOG_APPENDER=file WLOG_FILEAPPENDER_OUTPUT_FILE_NAME=output.log WLOG_FILEAPPENDER_OUTPUT_FILE_PATH=/tmp xfreerdp /v:....
+```
+
+## Exporter les logs via le réseau
+
+J'ai déjà utilisé cette fonctionnalité en faisant tourner FreeRDP sur un client léger avec peu de stockage et peu de CPU.
+Envoyer les logs vers une autre machine permet de résoudre les deux problèmes d'un coup.
+
+Pour utiliser l'appender réseau, on utilise le type `udp` et `WLOG_UDP_TARGET` permet de donner la cible des paquets qui seront 
+envoyés sous forme de datagrammes UDP.
+
+Par exemple, on lance FreeRDP de cette manière:
+```shell
+WLOG_APPENDER=udp WLOG_UDP_TARGET=192.168.0.2:20000 xfreerdp /v:....
+```
+
+Et on réceptionne les logs avec netcat sur l'autre machine (en `192.168.0.2`):
+```shell
+nc -ul -p20000
+```
+
+# Conclusion
+
+Maintenant vous savez tout sur les logs dans FreeRDP.
+

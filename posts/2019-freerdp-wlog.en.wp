@@ -1,0 +1,55 @@
+<img class="alignright" src="/images/FreeRDP.png" width="100px">
+When you're working on _FreeRDP_, it's quite usual to increase the log level and to have to collect a
+massive amount of logs. And most often it doesn't fit in the terminal backscroll history, or it
+is so slow (terminal rendering is CPU intensive) that you need a file storage. Another case is when
+you're on a remote host and you want to retrieve the log over the network.
+
+As each time I want to use the _WLog_ capacities I'm looking at the source code, I had the idea
+to write that post on the subject, so that next time I will look at this text.
+<br style='clear: both;'>
+
+<!-- TEASER_END -->
+
+# Using _Wlog_
+
+Log verbosity level is controlled by the `WLOG_LEVEL` environment variable (in FreeRDP you can also use the `/log-level` command line
+switch). It accepts values with `FATAL`, `ERROR`, `WARN`, `INFO`, `DEBUG` or `TRACE`.
+
+_Wlog_ is very similar to _log4j_ and uses _appenders_ attached to _loggers_. The _appenders_ available for _Wlog_ are:
+file, standard output, network , syslog or systemd. The kind of instancied appender is given by the `WLOG_APPENDER` variable.
+
+## Logging to a file
+
+To achieve this, you must use a `FILE` appender, and the `WLOG_FILEAPPENDER_OUTPUT_FILE_PATH` and `WLOG_FILEAPPENDER_OUTPUT_FILE_NAME`
+variables give the directory and the name of the file where the logs will be stored.
+
+For instance if you want logs in `/tmp/output.log`: 
+```shell
+WLOG_APPENDER=file WLOG_FILEAPPENDER_OUTPUT_FILE_NAME=output.log WLOG_FILEAPPENDER_OUTPUT_FILE_PATH=/tmp xfreerdp /v:....
+```
+
+## Logging through the network
+
+I've already used that feature when I was running FreeRDP on a thinclient (by the way I've coded this appender
+for that precise case), and the hardware was short in terms of CPU and storage. So exporting the logs solved both
+problems. 
+
+To use the network appender, you use a `udp` appender (`WLOG_APPENDER`) and `WLOG_UDP_TARGET` gives the target
+host for the packets, they will be send in UDP datagrams.
+
+For example, you run FreeRDP this way: 
+  
+```shell
+WLOG_APPENDER=udp WLOG_UDP_TARGET=192.168.0.2:20000 xfreerdp /v:....
+```
+
+And on the host that may receive the logs (at ip address `192.168.0.2`): 
+
+```shell
+nc -ul -p20000
+```
+
+# Conclusion
+
+Now you know almost everything about _wlog_.
+

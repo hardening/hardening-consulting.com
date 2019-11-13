@@ -1,5 +1,3 @@
-&nbsp; 
-
 <img class="alignright" src="/images/twisted.png" width="100px">
 
 En travaillant sur [topka][topka], j'ai eu l'occasion d'utiliser [twisted][twisted]. Les tutoriaux de twisted
@@ -7,6 +5,8 @@ sont bien fait, on a pleins d'exemples concrets, malgrés tout après
 avoir acquis un peu d'expérience avec le framework, j'ai eu envie d'écrire un petit article sur le
 sujet.
 
+
+Note: cet article ne contient rien qui ne soit déjà dans la [documentation de twisted][docs]
 <br style='clear: both;'>
 
 # Utilisation des deferred
@@ -124,3 +124,5 @@ un article sur les techniques de debuggage avec twisted.
 
 [topka]: https://github.com/hardening/topka
 [twisted]: https://www.twistedmatrix.com/
+[docs]: https://twistedmatrix.com/documents/current/core/howto/index.html
+

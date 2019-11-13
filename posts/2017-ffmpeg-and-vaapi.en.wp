@@ -1,7 +1,7 @@
 <img class='alignright' src='/images/ffmpeg.png' width='100px'>
 
 For some project I had the opportunity to look at H264 decoding and the hardware decoding using
-VAAPI. An ideal excuse to write a post about that subject... 
+VAAPI. An ideal excuse to write a post on that subject... 
 
 
 # What is VAAPI ?
@@ -26,13 +26,13 @@ decoding and the rendering in a surface.
 
 So I've started looking at how to interact with the API to do some H264 decoding. My goal was to take
 the H264 bytes, feed the GPU with it, and through the VAAPI get back an image. But of course
-things were not that simple, and I rapidly figured what I will have to code when looking
+things were not that simple, and I rapidly figured what I would have to code when looking
 at the sample programs. There were a lot of parameters to configure to interact with VAAPI:
 configuration matrixes, rates, ratios, numbers for many settings. There were at least 50 or 100
 of these. 
 
 <img class='alignright' src='/images/nal_stream.png'>
-I though I could not look at how the H264 is organized, but it seemed like it was a requirement. The lengthy [wikipedia page][h264]
+I though I could skip looking at how the H264 format is structured, but it seems like it is a requirement. The lengthy [wikipedia page][h264]
 gives an overview of the format's complexity.
 
 TLDR: The stream is splitted in NAL (Network Abstraction Layer). Some of these NAL contain

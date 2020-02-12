@@ -72,7 +72,7 @@ Il y a les périphériques watchdog qui permette de redémarrer la VM si l'OS ra
 # Conclusion
 Plus d'excuses pour avoir une VM windows qui rame, et si c'est encore le cas c'est que ça ne vient pas de la couche d'émulation...
 
-
+_Update_: le CDrom de drivers contient un installeur qui permet de les installer tous d'un coup (et donc permet ne pas utiliser le truc du disque dur temporaire)
 
 [drivers]: https://docs.fedoraproject.org/en-US/quick-docs/creating-windows-virtual-machines-using-virtio-drivers/index.html
 [multimon]: /posts/20170302-multi-ecran-rdp.html

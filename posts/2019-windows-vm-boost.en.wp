@@ -1,0 +1,80 @@
+<img class="alignright" src="/images/kvm_logo.png" width="100px">
+Windows VMs are so slow under KVM. When you're a FreeRDP developper, you always end up with being forced to have windows
+VMs to test that old features are still working, or to test new shiny features (yes I love unicorns).
+
+<br style='clear: both;'>
+<!-- TEASER_END -->
+
+# Installing virtIO drivers
+
+Under windows the thing is alway to use the correct driver. So to begin, let's grab an ISO with _virtio_ [ISO][drivers] for
+ windows. You configure it as a CDrom for the VM, and let's go !
+
+
+## Basic drivers
+<img class="aligncenter" src="/images/vm/ballooning+serial.png">
+<br style='clear: both;'>
+
+First, let's go in the device manager. There you can see piece of hardware with missing appropriate drivers. It's ballooning and the virtual
+serial driver. We just ask to update the driver, and when searching we point on the driver CDROM. And we get 2 new working devices: 
+
+<img class="aligncenter" src="/images/vm/ballooning+serial-installed.png">
+<br style='clear: both;'>
+
+
+If you're wondering what is _ballooning_, it's there so that the guest OS knows it is virtualized, and avoids
+to use all the available "physical" memory. Contrary to popular misconceptions, unused memory is lost memory because it's memory
+that could have been used for disk cache. So if the guest is not notified it will try to use all available memory.
+
+
+
+## Display
+
+Like cited in a previous [post][multimon] on multi-monitors in VMs, it's really neat to install the `QXL` driver with a spice
+output. In the VM configuration, use `QXL` as kind of video card. Then you ask to update the video driver, some flickering during installation, and then 
+you have mode video modes and the display is much faster.
+
+<img class="aligncenter" src="/images/vm/video.png">
+<br style='clear: both;'>
+
+## Network
+In the same way, you can choose to have a `virtio` network card:
+
+<img class="aligncenter" src="/images/vm/network.png">
+<br style='clear: both;'>
+ 
+Then again, go to _device manager_, then _update driver_.
+
+## Disk driver
+
+The disk virtio driver is by far the one that will bring you the more performance gains. It's so much
+easier to share disk blocks using a shared memory, than having to do a complete IDE controller emulation. Anyway how to
+install the `virtio` driver for a hard drive, when you're booting from that hard drive ? It's a chicken and egg problem !
+
+The trick is to add a fake drive and configure it with the `virtio` kind. Don't modify anything about your main drive for now:
+
+<img class="aligncenter" src="/images/vm/extra-disk.png">
+<br style='clear: both;'>
+
+Once the VM has started, install the driver for that new hard drive. The installation is done system-wide, so at next boot when 
+we'll have changed the type of the main hard drive to `virtio`, we'll have a driver to handle the main drive. 
+
+Switch off the VM, remove the fake drive, change the type of the main drive, and reboot. This boot should be a little longer, but just like 
+when you have a new peripherical detected. After that, the VM should be much faster with the new driver.
+
+ 
+## Trying other virtual devices
+
+QEmu proposes some other funny devices that you should try. There's the shared random generator device that you can point on the host `/dev/urandom`, so that you 
+share the entropy between guest and host.
+
+There's also the watchdog device that will reboot the VM if it's too laggy and can't notify the wathdog.
+
+# To conclusion
+So now, no excuses for a laggy windows VM, and if it's still the case then you can't blame the emulation layer...
+
+
+_Update_: the drivers CD has an installeur that can install all drivers in one pass, so you can avoid using the fake hard drive trick.
+
+[drivers]: https://docs.fedoraproject.org/en-US/quick-docs/creating-windows-virtual-machines-using-virtio-drivers/index.html
+[multimon]: /posts/20170302-multi-ecran-rdp.html

@@ -74,7 +74,7 @@ There's also the watchdog device that will reboot the VM if it's too laggy and c
 So now, no excuses for a laggy windows VM, and if it's still the case then you can't blame the emulation layer...
 
 
-_Update_: the drivers CD has an installeur that can install all drivers in one pass, so you can avoid using the fake hard drive trick.
+_Update_: the drivers CD has an installer that can install all drivers in one pass, so you can avoid using the fake hard drive trick.
 
 [drivers]: https://docs.fedoraproject.org/en-US/quick-docs/creating-windows-virtual-machines-using-virtio-drivers/index.html
 [multimon]: /posts/20170302-multi-ecran-rdp.html

@@ -1,0 +1,98 @@
+<img class="alignright" src="/images/accendino.png" width="100px">
+Un post après une longue période sans rien publier. Récemment j'ai fait beaucoup de choses
+autour d'ogon, et j'ai dû déployer à la chaine sur plusieurs machines pour des tests.
+Le [guide de déploiement][install] est bien, mais c'est long et répétitif, et puis
+sutout si c'est consignable dans un manuel d'installation, c'est que c'est automatisable
+par un script.
+
+<br style='clear: both;'>
+
+# Accendino
+
+J'ai donc créé pour ça ce petit logiciel [accendino][accendino] (briquet en italien) qui va nous permettre d'allumer un
+grand feu (_ogon_ en russe). <!-- TEASER_END -->
+Le script va faire passer toutes les instructions du manuel d'installation (sauf celles orientées système pour l'instant) en 
+automatisant tout: installation des packages nécessaire à la compilation, descente des différents dépôts, compilation et 
+installation. Le tout en respectant les dépendances entre paquets: par exemple pour installer le greeter (la mire de login), 
+il faut installer avant: _FreeRDP_, _ogon_, _ogon-apps_ et _ogon-platform-qt_.
+
+## Environnement de développement d'ogon
+
+Accendino permet de choisir le type de déploiement, ça en fait donc l'outil idéal pour déployer un environnement
+de développement d'ogon, par exemple:
+
+``` console
+$ python accendino.py --prefix=/opt/ogon --build-type=debug
+```
+
+On aura tous les dépôts dans le répertoire `work`, et un déploiement compilé en debug. Il n'y aura plus qu'à jouer avec les sources et 
+recompiler à la main ou relancer _accendino_.
+
+## Installer des sources alternative d'ogon
+
+Accendino permet aussi de spécifier un fichier de "sources", qui va permettre de compiler ses propres versions
+de dépôts et aussi de nouvelles choses à compiler. Par exemple le fichier correspondant à _ogon forgiare_ permet d'avoir
+des nouveautés intéressantes pour ogon.
+
+Petite explication du fichier de sources correspondant:
+
+```python
+from accendino import CMakeBuildItem, DepsBuildItem, AutogenBuildItem, XOGON_ENV, OGON_opts, pkgItemsCopy
+from accendino import ITEMS_PKG as BASE_ITEMS_PKG
+
+BUILD_ITEMS = [
+	CMakeBuildItem('ogon-forgiare', ['freerdp2'], ('https://github.com/forgiare/ogon.git', 'future'),
+                                    OGON_opts, parallelJobs=False, provides='ogon'),
+    AutogenBuildItem('ogon-xserver-forgiare', ['ogon'], ('https://github.com/linuxrrze/xorg-xserver.git', 'master'),
+        extraEnv=XOGON_ENV, runInstallDir='hw/xogon',
+        configureArgs=['--disable-xfree86-utils', '--disable-linux-acpi', '--disable-linux-apm', '--disable-xorg', '--disable-xvfb',
+                       '--disable-xquartz', '--disable-standalone-xpbproxy', '--disable-xwin', '--disable-glamor', '--disable-kdrive',
+                       '--disable-xephyr', '--disable-xfake', '--disable-xfbdev', '--disable-kdrive-kbd', '--disable-kdrive-mouse',
+                       '--disable-kdrive-evdev', '--with-vendor-web="http://www.ogon-project.com"', '--disable-xquartz', '--disable-xnest',
+                       '--disable-xorg', '--enable-xogon', '--disable-xwayland', '--with-xkb-output=/usr/share/X11/xkb/compiled',
+                       '--with-xkb-path=/usr/share/X11/xkb', '--with-xkb-bin-directory=/usr/bin/',
+                       'LDFLAGS=-Wl,-rpath={prefix}/{libdir}:{prefix}/lib/x86_64-linux-gnu/'],
+                       provides='ogon-xserver'),
+
+	DepsBuildItem('forgiare', ['ogon-forgiare', 'ogon-xserver-forgiare', 'full-ogon-freerdp2']),
+]
+
+
+ITEMS_PKG = {}
+pkgItemsCopy(ITEMS_PKG, 'ogon-forgiare', 'ogon') # just copy entries of 'ogon' for all distrib
+pkgItemsCopy(ITEMS_PKG, 'ogon-xserver-forgiare', 'ogon-xserver') # just copy entries of 'ogon' for all distrib
+
+
+DEFAULT_TARGETS='forgiare'
+```
+
+Le fichier est interprété comme un fichier python, d'ou les directives d'imports en début de fichier,
+et la grande expressivité des fichiers sources (on a toute la puissance de python).
+  
+`BUILD_ITEMS` contient une liste des définitions de paquets. On a une source git à descendre, des dépendances à
+d'autres paquets accendino et en fonction de l'outil de build (cmake, base autotools ou encore meson), on peut 
+donner des options de compilations. 
+À noter, que l'utilisation de la directive `provides` permet d'avoir son paquet qui se substitue à une source définie dans accendino,
+pour peu qu'on demande à ce quelle soit construite avant. Par exemple _ogon-forgiare_ exprime que quand on le
+construit on construit une version d'ogon. Le fichier de forgiare remplace les builds d'ogon et du serveur X ogon par 
+des versions avec des améliorations.
+
+`ITEMS_PKG` contient les packages systèmes à installer par distribution et par paquet. La plupart du temps
+on recopie les dépendences du paquets qu'on surcharge.
+
+Finalement `DEFAULT_TARGETS` va surcharger les paquets qui sont construits quand on ne donne rien
+en ligne de commande.
+
+On peut bien sûr ajouter des paquets maison qui iraient avec son déploiement.
+
+# Conclusion
+
+En écrivant un fichier de sources personnel, j'ai pû déployer rapidement des développements autour d'ogon. 
+Accendino nécessite sans doute des adaptations pour certaines plate-formes, pour l'instant je l'ai utilisé avec succès 
+sur des distributions debian, Ubuntu et Fedora.
+Quand il y aura des paquets _.deb_ ou _.rpm_ l'outil perdra peut-être un peu de son intérêt, mais en attendant l'essayer c'est l'adopter.
+
+
+
+[install]: https://github.com/ogon-project/ogon/blob/master/doc/build-debian-ubuntu.md
+[accendino]: https://github.com/forgiare/accendino

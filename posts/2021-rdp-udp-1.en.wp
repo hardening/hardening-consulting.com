@@ -1,0 +1,96 @@
+<img class="alignright" src="/images/rdplogo.jpeg" width="100px">
+Months that I have not posted anything. So let's begin with some wishes for the new year, let's hope the Covid will
+be more quiet in 2021.
+
+I'm currently working on implementing UDP support in FreeRDP, so let's have a serie of post on that subject. I'm gonna
+begin with an overview, how it works, implications and I'll certainly go more in the details in the next posts.
+
+<br style='clear: both;'>
+
+# Overview of the UDP transport
+
+## Documentation and specifications
+<img class="alignright" src="/images/specifications2.png" width="100px">
+
+The UDP transport is described in multiple specifications:
+
+* [MS-RDPBCGR][ms-rdpbcgr] : the core RDP specification, we have some flags in GCC packets, and of
+course the description of multi-transport; 
+* [MS-RDPEMT][ms-rdpemt] : this document describes multi-transport, that allows to install multiple transports at the
+same time;
+* [MS-RDPEUDP][ms-rdpeudp] : the UDP transport itself;
+* [MS-RDPEUDP2][ms-rdpeudp2] : the new version of the protocol;
+* [MS_RDPEDYC][ms-rdpedyc] : dynamic channels specification;
+
+<!-- TEASER_END -->
+
+## General approach
+
+Multi-transport allows to transport channel traffic over multiple-transport. An improvement
+is the possibility to have a lossy transport that allows to lose some packets in the channel traffic.
+Anyway it seems like this feature is not used a lot as in MS-RDPEUDP2 (the new version of the UDP transport) it
+is not present anymore.
+
+Negotiating multi-transport is done with this workflow: 
+
+* the RDP client connects in TCP and starts negotiation;
+* it negotiate multi-transport over the TCP connection;
+* initiated by the server, one or more UDP transports are established;
+* then the channels are migrated over UDP transports;
+
+Let's have a look at the details.
+
+## Flags announce
+
+<div class='aligncenter'>
+<img class="aligncenter" src="/images/udp/udp-X.224-nego.png">
+</div>
+
+In the first negotiation packet, it's a good idea for the client to put a [correlationId][correlationId], this way the server
+will be able to map an input UDP connection to it's master TCP connection. The strict association between the 2 connections is done
+with another mecanism, the `correlationId` is there just to have nicer logs before the UDP transport is established.
+
+<div class='aligncenter'>
+<img class="aligncenter" src="/images/udp/udp-X.224-gcc.png">
+</div>
+
+Then the client and server must announce multi-transport support by settings [TS_UD_CS_MULTITRANSPORT][mt-client] and 
+[TS_UD_SC_MULTITRANSPORT][mt-server] in GCC packets.
+
+## Multi-transport Negotiation 
+
+<div class='aligncenter' style='padding-bottom:10px;'>
+<img class="aligncenter" src="/images/udp/udp-X.224-mt.png">
+</div>
+
+Next in the negotiation steps, just after licensing, multi-transport negotiation itself starts. The steps are:
+
+
+<div class='aligncenter'>
+<img class="aligncenter" src="https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-rdpemt/ms-rdpemt_files/image001.png">
+</div>
+
+we have the `Initiate Multitransport Request` received by the client on the TCP connection (so multi-transport is initiated by the server). 
+Then the RDP-UDP transport is established, and once done we can start transfering data over UDP. When UDP transport is established, this layer 
+is secured by either TLS or DTLS depending if the transport is lossy or lossless. When the SSL handshake is completed, the transport is considered 
+functional from the client point of view.
+
+Over that UDP connection, the client will send a `Tunnel Create Request` so that the server will be able to map the UDP transport with
+the main TCP connection (sending back a secret present in the `Initiate Multitransport Request` packet at the first step). Then the client 
+will reply on the TCP connection with a `Initiate Multitransport Response` to confirm that everything 
+is operational, and then migration of channels to UDP transport can begin.
+
+# Conclusion
+
+To be continued...
+
+[ms-rdpbcgr]: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-rdpbcgr/5073f4ed-1e93-45e1-b039-6e30c385867c]
+[ms-rdpemt]: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-rdpemt/d22b606c-32c4-4647-b356-86f75e23a22c
+[ms-rdpeudp]: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-rdpeudp/2744a3ee-04fb-407b-a9e3-b3b2ded422b1
+[ms-rdpeudp2]: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-rdpeudp2/9db34630-e880-4bfd-9d8d-50bc044c3288
+[ms-rdpedyc]: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-rdpedyc/3bd53020-9b64-4c9a-97fc-90a79e7e1e06
+
+[mt-client]: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-rdpbcgr/3801236b-b5ba-4b6e-bf0d-afbde1fe391c
+[mt-server]: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-rdpbcgr/bf7201d4-9ed9-4dfe-9f6f-f2d68a7367ed
+[correlationId]: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-rdpbcgr/f047e45b-fbb8-4014-8f20-ce80149586d7
+

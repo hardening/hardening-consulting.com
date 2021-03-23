@@ -1,0 +1,112 @@
+<img class="alignright" src="/images/FreeRDP.png" width="100px">
+J'ai fais quelque modifications dans winPR pour corriger un bug dans les timers avec completion, et
+je suis tombé sur un soucis qui pourrait intéresser d'autres personnes que moi.
+
+Ça concerne la gestion des `EINTR`, quand un appel système est interrompu par l'arrivée d'un signal,
+la réponse va être un -1 et `errno` positionné à `EINTR`. Par exemple quand on fait un `select` ou un `read`, la manière de se 
+protéger de ce comportement, c'est de faire le code suivant:
+
+```C
+#include <sys/select.h>
+#include <errno.h>
+
+void myFunction() {
+	struct fd_set rset;
+	int status, max_fd;
+	
+	...
+	
+	
+	do {
+		ret = select(max_fd, &rset, NULL, NULL, NULL);
+	} while (ret < 0 && errno == EINTR);
+}
+``` 
+
+Bon et bien problème résolu, il suffit d'appliquer ce schéma à chaque fois qu'on a un appel système non ?
+<br style='clear: both;'>
+
+# Le cas du `poll`
+
+<!-- TEASER_END -->
+
+Malheureusement, ça ne va pas fonctionner dans un certain nombre de cas. Par exemple, si on utilise
+un POSIX timer qui va déclencher périodiquement un signal et qu'on se met en attente sur un autre file descriptor.
+Imaginons qu'on ai positionné un POSIX timer avec un déclenchement par `SIGALARM` toutes les 100 milli-secondes, et qu'on 
+veuille attendre pendant une seconde un évènement sur un fichier `fd`, et que cette évènement n'arrive jamais. Le code serait
+le suivant et on se protège contre les `EINTR`:
+
+```C
+#include <sys/poll.h>
+#include <errno.h>
+
+/* setup POSIX timer with a SIGALARM every 100 ms */
+
+void waitOn(int fd) {
+	struct pollfd set;
+	int status;
+	
+	set.fd = fd;
+	set.revents = 0;
+	set.events = POLLIN;
+	
+	do {
+		ret = poll(&set, 1, 1000);
+	} while (ret < 0 && errno == EINTR);
+}
+``` 
+
+Et bien plutôt que de sortir au bout d'une seconde, on va avoir une boucle infinie. En effet, toutes les 100
+milli-secondes, un signal va être émis pour le POSIX timer et traité, et donc générer un retour de `poll` avec `ret = -1` 
+et `errno = EINTR`. Sauf qu'on va repartir pour un tour de boucle en attendant de nouveau 1 seconde, etc. Donc s'il ne se passe 
+rien au niveau du fichier `fd`, on va rester à boucler indéfiniment plutôt que de sortir de la fonction au bout d'une seconde. 
+On voit que le problème se situe donc dans le fait que le temps d'occurence du signal est inférieur à celui de l'attente du
+`poll`. Ou plutôt le problème se situe dans le fait qu'on ne met pas à jour le temps d'attente. Pour avoir un code correct,
+il faudrait avoir le temps de départ de l'attente, calculer la date d'échéance et appeler `poll` en ajustant le timeout à chaque
+tour de boucle (chose que je vous laisse en exercice ;)).
+
+
+# Et si on est plus `select` ?
+
+Le cas de select est un peu plus subtil, en effet on aurait le code suivant:
+
+```C
+#include <sys/select.h>
+#include <errno.h>
+
+/* setup POSIX timer with a SIGALARM every 100 ms */
+
+void waitOn(int fd) {
+	struct timeval timeout;
+	struct fd_set set;
+	int status;
+	
+	FD_ZERO(&set);
+	FD_SET(fd, &set);
+	
+	timeout.tv_sec = 1;
+	timeout.tv_usec = 0;
+	
+	do {
+		ret = select(fd+1, &set, NULL, NULL, &timeout);
+	} while (ret < 0 && errno == EINTR);
+}
+``` 
+
+A première vue on dirait qu'on a le même bogue qu'avec `poll` non ? Et bien le [manuel][select man] de `select` dit que
+notamment sous Linux, le champs `timeout` est suceptible d'être mis à jour et que `timeout` va contenir en sortie
+le temps qu'il restait à dormir avant interruption de l'appel. Donc on n'aura pas la boucle infinie car `timeout` 
+va se réduire jusqu'à finir à 0, et on sortira instantanément de l'appel `select` avec `ret = 0`.
+
+Mais si on veut faire une implémentation multi-plateforme, se baser sur ce comportement n'est pas une option et il 
+faut, comme pour `poll`, recalculer le temps d'attente à chaque tour de boucle. 
+
+# Conclusion
+
+Une autre option est d'utiliser `pselect` ou `ppoll` qui désactive les signaux, mais suivant le programme, bloquer l'exécution des signaux n'est
+pas forcément une option viable ou souhaitable.
+
+
+[select man]: http://manpagesfr.free.fr/man/man2/select.2.html
+
+

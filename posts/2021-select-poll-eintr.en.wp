@@ -1,0 +1,108 @@
+<img class="alignright" src="/images/FreeRDP.png" width="100px">
+I've recently done some fixes in winPR with timers with completion and I've encoutered a case
+that may find interesting.
+
+It's about handling `EINTR`: when a system call in interrupted by an incoming signal, you'll
+get a `-1` return code and `errno` set to `EINTR`. So usually when you want to be protected against that
+behaviour you'll code something like:
+
+```C
+#include <sys/select.h>
+#include <errno.h>
+
+void myFunction() {
+	struct fd_set rset;
+	int status, max_fd;
+	
+	...
+	
+	
+	do {
+		ret = select(max_fd, &rset, NULL, NULL, NULL);
+	} while (ret < 0 && errno == EINTR);
+}
+``` 
+
+Ok, so problem treated, you can apply that scheme for any system call and you're done, isn't it ?
+<br style='clear: both;'>
+
+# The `poll` case
+
+<!-- TEASER_END -->
+
+Unfortunately, this isn't gonna work for some cases. For instance, if you have scheduled a POSIX timer
+that periodicaly triggers a signal and you're waiting on an unrelated file descriptor. Let's imagine you have 
+a POSIX timer that triggers with `SIGALARM` every 100 milli-seconds, and you're waiting on another file descriptor
+`fd`, but nothing happens on `fd`. As you wanna be protected against `EINTR`, you write:
+
+```C
+#include <sys/poll.h> 
+#include <errno.h>
+
+/* setup POSIX timer with a SIGALARM every 100 ms */
+
+void waitOn(int fd) {
+	struct pollfd set;
+	int status;
+	
+	set.fd = fd;
+	set.revents = 0;
+	set.events = POLLIN;
+	
+	do {
+		ret = poll(&set, 1, 1000);
+	} while (ret < 0 && errno == EINTR);
+}
+``` 
+
+So instead, of returning after 1 second, you're gonna have an infinite loop. Every 100 milli-second, the POSIX timer will
+trigger a signal that will be treated, so `poll` will exit with `ret = -1` and `errno = EINTR`. And you're gonna run that loop
+forever if nothing happens on `fd`. The problem happens when the signal is occuring with a shorter delay than the poll wait time.
+To fix it we should compute a dueDate at the beginning of the function and compute the wait delay at each loop turn (I let you write 
+such code as exercice ;) ). 
+
+# And what about `select` ?
+
+Select is a litlle mode subtle, we would have the corresponding code:
+
+
+```C
+#include <sys/select.h>
+#include <errno.h>
+
+/* setup POSIX timer with a SIGALARM every 100 ms */
+
+void waitOn(int fd) {
+	struct timeval timeout;
+	struct fd_set set;
+	int status;
+	
+	FD_ZERO(&set);
+	FD_SET(fd, &set);
+	
+	timeout.tv_sec = 1;
+	timeout.tv_usec = 0;
+	
+	do {
+		ret = select(fd+1, &set, NULL, NULL, &timeout);
+	} while (ret < 0 && errno == EINTR);
+}
+``` 
+
+Ok, so with a first look it seems like we have the exact same problem ? The select [manual][select man] states that
+notably under Linux, the `timeout` argument may be updated with the remaining sleep delay. So you would not have the infinite
+loop because `timeout` would lower until it reaches 0 (so `select` would return with `ret = 0`).
+
+But if you want to write some multi-platform code you can't rely on that behaviour, and you'll have to compute the poll delay
+at each loop turn.
+
+
+# Conclusion
+
+Another possibility is to use `pselect` or `ppoll` that will disable signal, but it's not always possible, and it's also not necessarily what you
+want.
+
+
+[select man]: https://man7.org/linux/man-pages/man2/select.2.html
+
+

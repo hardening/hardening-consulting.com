@@ -1,0 +1,43 @@
+<img class="alignright" src="/images/valgrind.png" width="100px">
+Une petite astuce que j'ai découvert il y a quelque temps: l'outil `massif` de `valgrind`. Il permet d'adresser des cas
+où on a un programme qui mange trop de mémoire inutilement, mais comme il fait correctement le ménage à la fin, on ne
+voit rien avec les outils de leak standard (`valgrind` ou `asan`)  
+ 
+<br style='clear: both;'>
+
+# Massif
+
+C'est là qu'intervient l'outil `massif` de `valgrind` ainsi que l'outil de visualization `massif-visualizer`. Cet
+outil va permettre de régulièrement faire des snapshots des allocations mémoires, et de voir les callstacks
+des endroits de nos programme qui font ces allocations.
+<!-- TEASER_END -->
+
+Donc on lance le programme avec valgrind:
+
+```console
+$ valgrind --tool=massif myprogram myarg1 myarg2...
+```
+
+Et à la fin de l'exécution on a un fichier `massif.out.<pid>` qui contient les snapshots des allocations mémoires. À noter 
+que ça suit le principe de `valgrind`: une réécriture de l'exécutable pour y ajouter de l'instrumentation, et donc
+quand on forke, le processus enfant est aussi instrumenté.
+
+# Massif-visualizer
+
+Très bien on a pris des traces, et ensuite ? 
+
+Et bien on utilise l'outil `massif-visualizer` qui permet de voir quelles fonctions ont fait des allocations mémoires, on 
+obtient par exemple quelque chose comme ça:
+
+<div class='aligncenter'>
+<img class="aligncenter" src="/images/valgrind/massif.png">
+</div>
+
+<br/>
+Et donc on peut se poser plein de questions du genre: est-ce que toutes ces allocations sont bien justifiées ? Est-ce
+que mon programme ne serait pas devenu obèse ? Est-ce qu'on ne pourrait pas lacher un peu de cette mémoire pour
+être plus sympatique avec le reste du système ?
+
+# Conclusion
+
+Bref `massif` c'est bien, utilisez le !

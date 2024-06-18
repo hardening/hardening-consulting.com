@@ -12,10 +12,10 @@ There have been a lot of press activity around that when it has been released
 (see [press][Press] section).
 
 
-## FreeRDS compositor
+## Ogon compositor
 This project is quite similar to the RDP compositor, this time it's about having
-a weston desktop exported via FreeRDS. The FreeRds session manager can instanciate
-a weston desktop using the FreeRds backend. This can be used for testing wayland applications or
+a weston desktop exported via Ogon. The Ogon session manager can instanciate
+a weston desktop using the Ogon backend. This can be used for testing wayland applications or
 having X11-less installations.
 A [post][FreeRDS compositor] gives more details about this project.
 
@@ -29,11 +29,12 @@ I'm a contributor on the FreeRDP project, I have:
 * done many security improvements in RDP packet decoding ;
 * pushed many patches to handle corner cases like failing memory allocations and such ;
 * Reworked the transport layer to have a cleaner design ;
+* adapted wayland and weston code to write the UWAC library (Using Wayland As a Client) and `wlfreerdp` ;
 * and many others...
 
 <img class='alignright' src='/images/rdplogo.jpeg' height='100px'>
-# FreeRDS
-I'm part of the guys that did FreeRDS. I have been working on the server itself as well
+# Ogon
+I'm part of the guys that did Ogon. I have been working on the server itself as well
 on external channels. 
 
 
@@ -49,18 +50,18 @@ This project is hosted on [github][qfreerdp]. It is published under the Apache 2
 I know that some commercial products are using it internally.
   
 
-## QFreerds
-This project is not publicly available yet, it's the same kind of project than Qfreerdp but
-to publish the application through FreeRDS. You can comfortably develop and test your Qt5 application
+## QOgon
+This project is the same kind of project than Qfreerdp but
+to publish the application through Ogon. You can comfortably develop and test your Qt5 application
 on your desktop. And when it's ready the binary can be used as-is for a publication through
-FreeRds.
+Ogon.
 
-The greeter (gui application asking for login / password) of FreeRDS in this video used that project:
+The greeter (gui application asking for login / password) of ogon in this video uses that project:
 
 https://www.youtube.com/watch?v=hGErMsA8kG4
 
 
-We also have custom Qt5 widgets that can interact with the FreeRds server. These widgets can
+We also have custom Qt5 widgets that can interact with the Ogon server. These widgets can
 be dragged/drop directly in QtDesigner. For example, we
 have a mode switcher widget that allows to change the RDP resolution from the application. 
 

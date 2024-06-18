@@ -1,6 +1,6 @@
 <img class="alignright" src="/images/FreeRDP.png" width="100px">
 I've recently done some fixes in winPR with timers with completion and I've encoutered a case
-that may find interesting.
+that you may find interesting.
 
 It's about handling `EINTR`: when a system call in interrupted by an incoming signal, you'll
 get a `-1` return code and `errno` set to `EINTR`. So usually when you want to be protected against that

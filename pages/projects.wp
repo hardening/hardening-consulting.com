@@ -8,18 +8,19 @@ Ce compositeur headless permet d'avoir un desktop wayland exporté en RDP. Un de
 [articles][FreeRDP compositor] couvre ce sujet plus en détails. 
 
 A noter que ce compositeur est utilisé par le fullscreen shell de Jason Ekstrand pour exporter
-le desktop en RDP.
+le desktop en RDP. Et surtout c'est la brique de base de WSL2 pour avoir des applications linux
+sous windows.
 
 Ce projet a fait un peu de bruit lors de sa sortie (voir la section [Presse][Press]).
 
 
-## Compositeur FreeRDS
+## Compositeur ogon
 Il s'agit d'un projet proche du compositeur RDP mais cette fois-ci il s'agit de pouvoir
-avoir un desktop weston intégré avec FreeRds. Avec ce backend, on peut demander au
-session manager de FreeRds d'instancier un desktop tournant sous weston. Pour l'instant, celà
+avoir un desktop weston intégré avec ogon. Avec ce backend, on peut demander au
+session manager d'ogon d'instancier un desktop tournant sous weston. Pour l'instant, celà
 est utile surtout à des fins de tests (tester des applications wayland sans faire tourner
 wayland nativement). Mais au fur et à mesure des avancées de wayland, il va devenir
-intéressant d'avoir un desktop FreeRds sans X11 / Xrds.
+intéressant d'avoir un desktop ogon sans X11 / Xogon.
 
 Un de mes [articles][FreeRDS compositor] donne plus de détails techniques.
 
@@ -30,13 +31,14 @@ Un de mes [articles][FreeRDS compositor] donne plus de détails techniques.
 Je suis un contributeur régulier de FreeRDP, j'ai notament contribué:
 
 * tout un ensemble de corrections de sécurité visant le code gérant les paquets RDP ;
-* une série de patch visant à gérer les corner cases ;
+* une série de patch visant à gérer les cas limites ;
+* le support d'openCL ;
 * des travaux autour de la couche transport de FreeRDP.
 
 
 <img class='alignright' src='/images/rdplogo.jpeg' height='100px'>
-# FreeRDS
-Je fais partie de l'équipe qui a fait FreeRDS. Tant sur la partie serveur lui-même
+# Ogon
+Je fais partie de l'équipe qui a créé ogon. Tant sur la partie serveur elle-même
 que sur les services périphériques. 
 
 
@@ -53,24 +55,24 @@ Le projet est hébergé sur [github][qfreerdp]. Il est disponible sous licence A
 sais qu'il est utilisé en interne par des produits commerciaux.
   
 
-## QFreerds
-Ce projet n'est pas encore publiquement disponible mais il s'agit du pendant de qfreerdp 
-pour FreeRds. Il permet de tranquillement développer une application Qt5 sur son desktop,
-avec tous les outils Qt5 intégrés, et de la rendre disponible via FreeRds.
+## QOgon
+Ce projet est le pendant de qfreerdp 
+pour Ogon. Il permet de tranquillement développer une application Qt5 sur son desktop,
+avec tous les outils Qt5 intégrés, et de la rendre disponible via Ogon.
 
-Le greeter (application qui demande un login / mot de passe) de FreeRDS de cette vidéo utilise ce projet:
+Le greeter (application qui demande un login / mot de passe) d'ogon de cette vidéo utilise ce projet:
 
 https://www.youtube.com/watch?v=hGErMsA8kG4
 
 
-Dans ce projet, on dispose aussi de widgets Qt pour interagir avec FreeRds. On a par exemple
+Dans ce projet, on dispose aussi de widgets Qt pour interagir avec Ogon. On a par exemple
 un widget de changement de résolution utilisable directement dans QtDesigner. Ce widget
 se présente sous la forme d'une combobox avec des résolutions d'écrans. Quand l'utilisateur
 choisit une résolution, le client RDP aura sa résolution changée à la valeur demandée.
 
-D'autre widgets vont être développés au grés des avancées de FreeRds, l'idée est vraiment
+D'autre widgets vont être développés au grés des avancées de Ogon, l'idée est vraiment
 de pouvoir développer une application sur son desktop et de pouvoir la diffuser via
-FreeRDS avec le moins de changements possible. 
+Ogon avec le moins de changements possibles. 
  
 
 [Press]: /stories/presse.html

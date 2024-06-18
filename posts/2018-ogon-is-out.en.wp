@@ -19,7 +19,8 @@ name _ogon_ (fire in russian).
 ## During that time...
 
 Of course the project has gained some new features since 2014:
-* sound support with _pulseaudio_ module;
+
+* sound support with a _pulseaudio_ module;
 * support for multi-touch on all backends;
 * support for the _egfx_ channel and h264 encoding (using _openH264_);
 * some implementations for clipboard and disk redirection;

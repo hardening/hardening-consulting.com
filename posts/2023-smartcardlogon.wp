@@ -1,0 +1,149 @@
+<img class="alignright" src="/images/rdplogo.jpeg" width="100px">
+Dans (le futur) FreeRDP 3.0, il y a le support pour le _smartcard logon_, sur lequel j'ai pas mal travaillé, voyons un petit peu ce qu'il en est.
+ 
+<br style='clear: both;'>
+
+# Support smartcard
+
+On commence par vérifier qu'on voit bien la smartcard, dans mon cas il s'agit d'un _yubikey(TM)_:
+```console
+$ opensc-tool -l
+# Detected readers (pcsc)
+Nr.  Card  Features  Name
+0    Yes             Yubico YubiKey OTP+FIDO+CCID 00 00
+```
+<!-- TEASER_END -->
+
+Tant qu'à faire, on vérifie aussi qu'il y a bien ce qu'il faut sur la carte pour fait un logon:
+```console
+$ pkcs11-tool -O
+Using slot 0 with a present token (0x0)
+Private Key Object; RSA 
+  label:      CARD AUTH key
+  ID:         04
+  Usage:      decrypt, sign, unwrap
+  Access:     sensitive, always sensitive, never extractable, local
+Public Key Object; RSA 2048 bits
+  label:      CARD AUTH pubkey
+  ID:         04
+  Usage:      encrypt, verify, wrap
+  Access:     none
+Certificate Object; type = X.509 cert
+  label:      Certificate for Card Authentication
+  subject:    DN: DC=com, DC=hardening2, CN=Users, CN=david
+  ID:         04
+Data object 466566400
+  label:          'Card Capability Container'
+  application:    'Card Capability Container'
+  app_id:         2.16.840.1.101.3.7.1.219.0
+  flags:          <empty>
+  
+[...]
+
+Data object 466567456
+  label:          'Discovery Object'
+  application:    'Discovery Object'
+  app_id:         2.16.840.1.101.3.7.2.96.80
+  flags:          <empty>
+Profile object 466573616
+  profile_id:          '3'
+
+```
+
+Ce qu'il faut trouver c'est la clé (Private Key Object; RSA), et le certificat associé (Certificate Object; type = X.509 cert). 
+
+Et enfin on vérifie que la clé et le certificat sont bien vus par FreeRDP:
+```console
+$ ./output-linux/client/X11/xfreerdp /list:smartcard
+smartcard reader detected, listing 1 certificates:
+0: DC = com, DC = hardening2, CN = Users, CN = david
+        * CSP: Microsoft Base Smart Card Crypto Provider
+        * reader: Yubico YubiKey OTP+FIDO+CCID 00 00
+        * slotId: 0
+        * pkinitArgs: PKCS11:module_name=opensc-pkcs11.so:slotid=0
+        * containerName: 8d40a038-e120-24ba-77ab-0237715fc101
+        * UPN: david@hardening2.com
+```
+
+A noter que pour l'instant FreeRDP ne supporte que les certificats avec des clés RSA, pas les courbes elliptiques. Si
+d'aventure l'accès à la smartcard se fait avec un librairie propriétaire, on peut passer l'option avec 
+`/kerberos:pkcs11-module:<chemin vers le .so>`.
+Dans le cas ou il y a plusieurs certificats ou plusieurs smartcard,
+en utilisant les options `/u:<user>` ou `/d:<domain>`, un filtrage pour cet utilisateur ou ce realm sont opérés.
+
+Si cette étape ne liste pas le certificat, ce n'est pas la pein d'aller plus loin, FreeRDP n'arrivera pas à vous faire
+une smartcard logon. 
+
+Pour que le logon marche complètement, il faut absolument qu'on arrive à calculer le _containerName_, sinon ça
+connectera en RDP mais ça redemandera le code PIN à la connexion. Pour l'instant dans FreeRDP, nous savons calculer ça pour les cartes
+qui répondent à la norme PIV (quasiment toute les cartes). 
+
+
+# Configuration Kerberos
+Quand on fait un smartcard logon, en fait on établi une connexion en Kerberos avec la carte à puce à travers des paquets NLA (du CredSSP
+à l'intérieur). Donc commençons par vérifier que tout le kerberos marche en testant un logon "à la main". 
+
+Dans mon cas, mon realm s'appelle _HARDENING2.COM_, le controlleur de domaine windows correspondant est sur la machine _dc.hardening2.com_, et je
+vais me logguer en tant que _david_ . Comme on fait du kerberos, on n'oubliera pas l'emploi des majuscules pour le realm.
+
+Sans configuration, si on tape `kinit david@HARDENING2.COM`, sauf si le DNS est correctement configuré, ça ne devrait pas marcher car la machine 
+locale ne sait pas comment joindre le royaume _HARDENING2.COM_. Il faut donc configurer ça dans le fichier _/etc/krb5.conf_:
+
+```
+HARDENING2.COM = {
+    kdc = 192.168.125.2
+    admin_server = 192.168.125.2
+
+    pkinit_anchors = FILE:/etc/hardening2-ca.pem
+    pkinit_eku_checking = kpServerAuth
+    pkinit_kdc_hostname = dc.hardening2.com 
+}
+
+```
+
+* les champs _kdc_ et _admin_server_ sont les adresses ou les noms qualifiés du controlleur de domaine ;
+* le champs _pkinit_anchors_ donne le chemin vers les certificats de la ou des autorités de certification délivrant les certificats 
+sur les smartcards (ça peut aussi être de la forme _DIR:répertoire_). C'est à récupérer sur le contolleur de domaine soit dans les clicodromes de 
+gestion de la PKIs, soit dans l'interface web d'enrôlement quand elle est installée. Ce n'est pas toujours facile ;
+* d'expérience on est souvent obligé de préciser _pkinit_kdc_hostname_ ;
+
+__Note:__ je ne détaille pas comment configurer la partie windows pour le smartcard logon, ou comment créer les certificats et les mettre sur la carte
+à puce. Je peux juste dire que c'est tout sauf simple, mais le web regorge de suite d'instructions à suivre (qui ne marchent pas toujours).  
+
+Et du coup une fois cette configuration faite, on doit pouvoir tenter une connexion smartcard (il faut taper son code PIN):
+```console
+$ kinit -X X509_user_identity='PKCS11:opensc-pkcs11.so' david@HARDENING2.COM
+Users                            PIN: ***********
+```
+
+On vérifie qu'on a bien un TGT:
+```console
+$ klist
+Ticket cache: FILE:/tmp/krb5cc_1000
+Default principal: david@HARDENING2.COM
+
+Valid starting       Expires              Service principal
+04/10/2023 14:42:34  05/10/2023 00:42:34  krbtgt/HARDENING2.COM@HARDENING2.COM
+        renew until 05/10/2023 14:42:32
+```
+
+Quand on essaye de debugger la configuration kerberos, il est bien utile de positionner la variable d'environnement `KRB5_TRACE=/dev/stdout`,
+ça permet d'augmenter la verbosité de la _libkrb5_ et on voit où ça échoue.  
+
+# Connection avec FreeRDP
+
+Une fois que tout ça fonctionne, l'essentiel du travail est fait. Avec un seul certificat dans une seule carte à puce FreeRDP
+va déduire la majorité des paramètres (le nom de l'utilisateur, le royaume kerberos, lecteur, ...):
+
+```console
+$ ./output/client/X11/xfreerdp /v:dc2.hardening2.com /smartcard-logon:pin:XXXXXX /sec:nla
+....
+``` 
+
+
+# Conclusion
+
+Avec FreeRDP 3, on a aussi le support du NLA coté serveur avec Kerberos (par exemple pour le shadow server), je ferais sans doute
+un article pour détailler comment on configure ça. Ça peut permettre d'avoir la connection au shadow server faite en NLA avec du kerberos,
+et même avec une authentification smartcard.
+

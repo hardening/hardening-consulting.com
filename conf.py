@@ -447,7 +447,8 @@ REDIRECTIONS = []
 # }
 DEPLOY_COMMANDS = {
 	'default': [
-		'rsync -rav --delete output/ root@hardening-consulting.com:/var/www/hardening-consulting.com/'
+		#'rsync -rav --delete output/ root@hardening-consulting.com:/var/www/hardening-consulting.com/'
+		'rsync -rav --delete output/ ubuntu@orchestrator:/var/www/hardening-consulting.com/'
 	]
 }
 
@@ -736,7 +737,7 @@ CONTENT_FOOTER_FORMATS = {
 # systems.  The following comment systems are supported by Nikola:
 #   disqus, facebook, googleplus, intensedebate, isso, livefyre, muut
 # You can leave this option blank to disable comments.
-COMMENT_SYSTEM = "googleplus"
+COMMENT_SYSTEM = ""
 # And you also need to add your COMMENT_SYSTEM_ID which
 # depends on what comment system you use. The default is
 # "nikolademo" which is a test account for Disqus. More information
@@ -959,15 +960,15 @@ BODY_END = """
     var u="//piwik.hardening-consulting.com/";
     _paq.push(['setTrackerUrl', u+'piwik.php']);
     var siteId;
-    if (location.host.endsWith('hardening-consulting.fr')) siteId = 1;
+    if (location.host.endsWith('hardening-consulting.fr')) siteId = 2;
     else if (location.host == '127.0.0.1:8000') siteId = 3
-    else siteId = 2;
+    else siteId = 1;
     _paq.push(['setSiteId', siteId]);
     var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
     g.type='text/javascript'; g.async=true; g.defer=true; g.src=u+'piwik.js'; s.parentNode.insertBefore(g,s);
   })();
 </script>
-<noscript><p><img src="//piwik.hardening-consulting.com/piwik.php?idsite=2" style="border:0;" alt="" /></p></noscript>
+<noscript><p><img src="//piwik.hardening-consulting.com/piwik.php?idsite=1" style="border:0;" alt="" /></p></noscript>
 <!-- End Piwik Code -->
 """
 

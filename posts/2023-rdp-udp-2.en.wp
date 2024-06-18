@@ -1,0 +1,128 @@
+<img class="alignright" src="/images/rdplogo.jpeg" width="100px">
+Let's take a closer look at the RDPUDP protocol which will transport data over UDP.
+To begin with, remember that only  channel data can be transported on top of UDP, so it doesn't affect older 
+graphics orders (so forget speed up of _bitmapUpdates_ with UDP), however it will work with any _egfx_ transported graphics. The migration from TCP to UDP is
+done through the dynamic channel, so _drdynvc_ is mandatory. This mechanism also allows
+ static channels to be migrated to UDP by setting the `TRANSPORTTYPE_UDP_PREFERRED` flag in the gcc packet of multi-transport channel data.
+ 
+<!-- TEASER_END -->
+<br style='clear: both;'>
+
+# Overview of RDPUDP transport
+
+## Documentation and specifications
+<img class="alignright" src="/images/specifications2.png" width="100px">
+
+The RDPUDP transport is negotiated on top of UDP and the transport format is defined in [MS-RDPEUDP][ms-rdpeudp],
+this is the first version; [MS-RDPEUDP2][ms-rdpeudp2] is the "enhanced" version. A client or server must support a 
+minimum of the 2 versions because we switch to RDPEUDP2 after having done a bit of negotiation
+with RDPEUDP. 
+
+RDPEUDP is the historical version, it allows to have a lossy transport and a reliable transport.
+In the lossy version, the top layer for encryption is DTLS, when the transport is reliable it is "normal" TLS.
+
+RDPEUDP2 only supports reliable transport (and therefore the upper layer is TLS), version 1 and unreliable transport are doomed
+to disappear. In practice with a payload of 1232 and variable length headers it's almost impossible for an application
+to manage an unreliable transport except to have a very small payload (as when it's unreliable a PDU must fit in 1232 minus the maximum size of the headers
+in case you lose a packet).
+
+## Process of the negotiation and establishment of the transport
+
+In the RDP negotiation, we are at the step where we have just finished negotiating the license, and the server sends the client a
+`Initiate Multitransport Request PDU`. The client then "connects" to the same address/port but in UDP:
+
+<div class='aligncenter'>
+<img class="aligncenter" src="https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-rdpemt/ms-rdpemt_files/image001.png">
+</div>
+
+I use the expression "connects", but it will only be sending UDP packets since UDP is not a connected protocol. The customer
+will send a _SYN_ packet which will contain, among other information, the maximum version of the protocol supported, and the server will respond with
+a _SYN/ACK_ (_SYN_ and _SYN/ACK_ are to be understood as _RDPUDP_ packets not as their equivalents in _TCP_) and the chosen version.
+
+<div class='aligncenter'>
+<img class="aligncenter" src="https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-rdpeudp/ms-rdpeudp_files/image002.png">
+</div>
+
+If the server responds with the `RDPEUDP2` version, then we switch to an interpretation of the packets according to this protocol. Note that if the server
+takes some time to respond, you may end up with a server that has already responded (and therefore considers that it speaks `RDPEUDP2`), while the client
+returns the SYN packet thinking it got lost (and so upon receipt, the server will trash that packet because it's not a `RDPEUDP2` packets. 
+I experienced this case while debugging.
+
+If you hadn't already guessed, UDP transport is very aggressive in terms of sending packets, and response times, you are literally
+overflowed by packets when debugging. Especially as execution is slower in step-by-step mode, you receive tons of packet retransmissions. Before
+limiting my implementation, I had a `Out-Of-Memory killer` intervention with the accumulation of UDP packets in the application which ended
+by eating all the memory.
+
+## RDPEUDP2 Protocol
+
+For now, I only made the RDPUDP2 implementation being annoyed by the FEC in RDPEUDP. Version 2 of the
+protocol has learned from the first version: it is less complicated, but compensates by being more aggressive in resending packets.
+
+I did notice a few deviations from the spec though and hope they will be fixed in the following releases (already reported to Microsoft):
+
+* the worst is probably that the specification talks about 1232 bytes as the maximum payload everywhere in the document. And in the first packets
+of data I received I had one that was 1239 bytes long, containing last bits of the SSL handshake. It took me a hell of a long time to find out that my
+handshake was not completing because of those 7 missing bytes (according to the specification, I was doing a `recv(1232)`, and therefore the end of the packet was lost for my code);
+* the specification contained errors for the [ACKVEC][ACKVEC] packets, reported to Microsoft and since corrected;
+
+ 
+# RDPUDP wireshark decoder
+<img class="alignright" src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Wireshark_icon.svg/langfr-220px-Wireshark_icon.svg.png" width="100px">
+During the development of this transport in FreeRDP it quickly became obvious that you need to have a way to decode the exchanged packets. 
+I started by implementing a packet decoder program in FreeRDP that displayed the interpretation of the packet from wireshark's hex dump (so interpreting packets with added code 
+in FreeRDP).
+Then I had FreeRDP dump the packets that were received, but given the volume (`RDPUDP` exchanges really a lot of packets), it quickly became impossible
+to search in the console. So I had the idea to write a dissector for wireshark.
+
+## LUA Dissector
+When you want to extend Wireshark, you can do it in 2 ways: write a native plugin in C that will be part of the wireshark code, or
+write as a LUA plugin. I chose this second option because I needed to quickly decode packets, and
+also because at the beginning, I only planned to make a prototype and extract only the information that interested me.
+But features after features, I ended up with a plugin that decodes everything, it is even able to track the status of connections
+in RDPEUDP and RDPEUDP2, and even does PDU aggregation to reassemble SSL records.
+
+The plugin code was pushed to FreeRDP in this [pull request][PR]. With wireshark, it is convenient to be able to capture as a normal, non-root user, to achieve
+this, I followed the instructions of the [wiki][wiresharkCapture]. Copy the plugin to `$HOME/.local/lib/wireshark/plugins/`, and normally you should see the
+exchanges in UDP on port 3389 decoded.
+
+## Native Dissector
+The dissector in LUA worked quite well, but I saw some issues when it came to decoding the SSL layer on top of the RDPUDP, I
+thought that these problems were coming from limitations in the LUA binding. So I decided to port my LUA plugin to a native dissector (in C) in
+wireshark.
+
+Once done, my native dissector had the same problems as the plugin in LUA. But in the meantime I did some housecleaning and
+improvements on RDP decoding in wireshark: management of different types of channels (drdynvc, egfx), tracking and reassembly of packets for
+channels, a dissector for the multi-transport protocol. And finally with commit `8a1649c5a5ff7c8bdf38cbf54ed5138c1773bfd7` I found the problem
+between the SSL and the RDPUDP dissector.
+
+After many refinements, including desegmentation support for RDPUDP, RDP decoding in wireshark over TCP and UDP are fully operational
+on the master branch.
+
+## `SecretsFile` bonus 
+To be able to decode TLS traffic, I used to patch my windows servers to force them to use combinations of
+ciphers without PFS (changes of various registry keys). I also had a crypto-weakened FreeRDP so that with just the server's private key, one could see the
+traffic in clear with wireshark. It was tedious and an operation to repeat each time, in addition the configuration in wireshark was always very painful (playing with "decode As").
+
+During a conversation, I learnt that openSSL could dump its secrets via an API, and that if you record that in a
+`secrets_file`, wireshark is able to exploit it even to decode TLS1.3 with PFS (and no need to have the server's certificate). So I added this 
+`/tls:secrets-file:<path to file>` option to FreeRDP which makes it possible to store the secrets of its SSL negotiations for future (or live) 
+decoding of SSL sessions (on TCP or UDP).
+
+In practice, you configure wireshark to fetch the secrets in `/tmp/secrets_file.txt` and you launch FreeRDP with:
+
+```console
+# xfreerdp /tls:secrets-file:/tmp/secrets_file.txt /v:myserver /u:...
+```
+
+And everything appears in the clear in wireshark, I've wanted to have this since years!
+
+
+# Conclusion
+
+There's so much more to say about messages on dynamic channel, multi-transport, signaling bandwidth, so stay tuned !
+
+[wiresharkCapture]: https://wiki.wireshark.org/CaptureSetup/CapturePrivileges
+[PR]: https://github.com/FreeRDP/FreeRDP/pull/7013
+[ACKVEC]: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-rdpeudp2/43183820-771d-4a00-89d6-58a3ecc80a78
+[ms-rdpeudp]: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-rdpeudp/2744a3ee-04fb-407b-a9e3-b3b2ded422b1
+[ms-rdpeudp2]: https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-rdpeudp2/9db34630-e880-4bfd-9d8d-50bc044c3288

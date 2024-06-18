@@ -65,13 +65,12 @@
 				</div>
 				<div class="social offset1 span4">
 					<ul>
-						<li>Married, French, 43 years old</li>
+						<li>Married, French, 47 years old</li>
 						<li><i class="icon-home"></i> 24, la mazure</li>
 						<li>35490 Gahard, France</li>
 						<li><i class="icon-envelope-alt"></i>contact@hardening-consulting.com</li>
 						<li><i class="icon-phone"></i> +33 6 08 97 10 83</li>
-						<li><!--<a href="#"><i class="icon-twitter"></i></a>
-						<a href="#"><i class="icon-facebook"></i></a>-->
+						<li>
 						<a href="http://hardening-consulting.com/"><i class="icon-user"></i></a>
 						<a href="https://github.com/hardening"><i class="icon-github"></i></a>
 						<a href="https://www.linkedin.com/in/fort-david-2a92b0/"><i class='icon-linkedin'></i></a></li>
@@ -86,7 +85,7 @@
 					<h6>I code, therefore I am</h6>
 				</header>
 				<div class="span9 ">
-					<p class="welcome">16 years experience in analyzing, developing and troubleshooting softwares for IT security.
+					<p class="welcome">20 years experience in analyzing, developing and troubleshooting softwares for IT security.
 Proven ability in the design, development and implementation of new software solutions and in
 the customization of existing solutions to specifications.<br>
 					</p>
@@ -154,22 +153,26 @@ the customization of existing solutions to specifications.<br>
 					</div>
 					<h4>Independant consultant - <a href='http://hardening-consulting.com'>Hardening consulting</a></h4>
 					<h5>November 2013 - today</h5>
-					<p>I've worked for companies located in various countries (France, Danemark, Italy, Poland, Germany, UK, Austria and India), mostly on projects related to FreeRDP, wayland and Qt:
+					<p>I've worked for companies located in various countries (France, Danemark, Italy, Poland, Germany, UK, US, Israel, Austria and India), mostly on projects related to FreeRDP, wayland and Qt:
 					<ul class='list'> 
 						<li>I've worked on <a href='https://github.com/ogon-project/ogon-project'>OGON</a>, a project aiming to have an opensource RDP server using FreeRDP
 						for the RDP primitives, it supports sound, disk redirection, multitouch devices, multiple monitors, remoteFx, H264, shadowing. It allows
 						to connect on a X session or to display Qt applications directly. It is currently used in 5000 shops. This project
 						made me modify and improve sources of FreeRDP, Xorg, openH264, Qt, wayland/weston, kwin and pulseaudio.
-						This project should be open sourced mid-2017.</li>
+						This project has been open sourced mid-2017.</li>
 						
 						<li>I've worked on misc subjects in FreeRDP: improving H264 performances by using hardware acceleration (this
-						project lead me to play with ffmpeg, VAAPI and the H264 format), code hardening, refactoring of the transport layer,
-						implementing the MS-RDPEVOR specification, implementing the dynamic resizing, ...</li>
+						project lead me to play with ffmpeg, VAAPI and the H264 format), openCL in primitives, code hardening, refactoring of the transport layer,
+						implementing the MS-RDPEVOR specification, implementing the dynamic resizing, implementing emulation layers in winPR, implementing
+						smartcard logon, ...</li>
 						
-						<li>I've also been hired as a RDP expert for a product that records RDP sessions, providing
+						<li>I've also been hired as a RDP expert for various products that records or proxify RDP sessions, providing
 						technical advises, bug corrections and evolutions.</li>
 						
-						<li>I've implemented the HTML and RTF formatted clipboard in <a href='http://guacamole.apache.org/'>GUACAMOLE</a></li> 
+						<li>I've implemented the RDP backend of the weston compositor, this code is the base for microsoft's WSL2 and is potentially deployed on all
+						windows 10 hosts;</li>
+						
+						<li>I've implemented the HTML and RTF formatted clipboard in <a href='http://guacamole.apache.org/'>GUACAMOLE</a>;</li> 
 					</ul>
 					</p>
 					
@@ -195,7 +198,7 @@ the customization of existing solutions to specifications.<br>
           	diagnose performance issues (valgrind and jMeter) and make required modifications to fix them. 
           	During the product's lifetime, performances have increased constantly although many features were 
           	added in the same time.</li>
-          	<li>I have designed and implemented the process from the sources to the final delivery (from subversion to a debian
+          	<li>I have designed and implemented the process to build from the sources to the final delivery (from subversion to a debian
           	 mirror archive). I have made a custom builder that can: build a delivery using multiple hosts,
           	 manage build dependencies, tag a full delivery (handles different SVN locations), 
           	 check package's changelogs, do partial builds (only a subset of the packages). 
@@ -282,7 +285,7 @@ the customization of existing solutions to specifications.<br>
       	<li>The information gathering part of a security audit is essential because the next steps
       	depend on what is found during this stage. I have worked on these security tests to make
       	them accurate in most situations (C, C++, packet manipulation).</li>
-      	<li>In collaboration with the security watch unit, I have also worked on implementing specific security 
+      	<li>In collaboration with the security monitoring team, I have also worked on implementing specific security 
       	tests (C++)</li>
       	<li>This work has been patented as FR0204652: "proc&eacute;d&eacute; et dispositif d'un audit de s&eacute;curit&eacute; dans un 
       	r&eacute;seau de t&eacute;l&eacute;com, plateforme et syst&egrave;mes correspondants"</li>
@@ -315,7 +318,7 @@ the customization of existing solutions to specifications.<br>
 
 			<!-- Footer -->
 			<footer>
-				© 2017 David Fort 
+				© 2024 David Fort 
 				<!-- <a href="#">Download as PDF</a> |--> <a href="#" onclick="javascript:window.print();">Print</a> | <a href="#top">To top <i class="icon-arrow-up"></i></a>
 			
 			</footer>
@@ -323,7 +326,8 @@ the customization of existing solutions to specifications.<br>
 
 <script src="/assets/js/jquery.min.js"></script>
 <script src="/js/cv_main.js"></script>
-	
+
+<!--
 <script type="text/javascript">
   var _paq = _paq || [];
   _paq.push(['trackPageView']);
@@ -340,5 +344,6 @@ the customization of existing solutions to specifications.<br>
     g.type='text/javascript'; g.async=true; g.defer=true; g.src=u+'piwik.js'; s.parentNode.insertBefore(g,s);
   })();
 </script><noscript><p><img src="//piwik.hardening-consulting.com/piwik.php?idsite=2" style="border:0;" alt=""></p></noscript>
+-->
 
 </body></html>

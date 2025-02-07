@@ -25,11 +25,6 @@ when we fork, the child process is also instrumented.
 
 # Massif-visualizer
 
-Très bien on a pris des traces, et ensuite ? 
-
-Et bien on utilise l'outil `massif-visualizer` qui permet de voir quelles fonctions ont fait des allocations mémoires, on 
-obtient par exemple quelque chose comme ça:
-
 Very well we have traces, what next?
 
 We use the `massif-visualizer` tool which allows us to see which functions have made memory allocations, for example 

@@ -1,0 +1,142 @@
+<img class="alignright" src="/images/accendino.png" width="100px">
+
+J'ai fais quelque petites mises à jour sur mon script _Accendino_, jusqu'à en faire un petit programme à part entière avec
+des fonctionnalités intéressantes. Cette version 0.5.9 vient ajouter plein de choses sympatiques par rapport à la version
+précédente. Avec le temps, je vois plus _Accendino_ comme un programme permettant de construire un logiciel complexe à partir
+de plusieurs sources logicielles, et sur plusieurs plate-formes. Pour l'instant mon cas d'école est FreeRDP, j'essaye d'avoir
+des fichiers accendino qui permettent de construire FreeRDP à partir de zéro sur le plus de plate-formes possibles (linux, mac,
+windows, mingw, ...)
+ 
+<br style='clear: both;'>
+
+# Historique
+
+Originellement _accendino_ n'était qu'un petit script permettant de jouer les instructions d'installation d'_Ogon_. Il était
+néanmoins un peu plus complexe car on pouvait spécifier les emplacements git à descendre. Par exemple, pour utiliser les repos
+de _Forgiare_ à la place des repos officiels d'_Ogon_. Avec la version 0.5.0, j'ai pas mal étendu ses fonctionnalités:
+
+* la possibilité d'inclure des fichiers accendino pour réutiliser des définitions existantes;
+* les sources des programmes ont été beaucoup étendues et ne viennent plus nécessairement de git. On peut avoir des sources locales, 
+  ou bien de git. Beaucoup d'options git sont désormais accessibles;<!-- TEASER_END -->
+* dans un fichier _accendino_ on a désormais accès a tout un tas de fonctions et de variables, ce qui permet de faire des scripts de
+  build plus complexes;
+* la gestion du plan de construction a été revue, ce qui a permis d'avoir une fonctionnalité de reprise du build à partir
+  d'un certain point;
+* il arrive que les distributions changent le nom ou la disponibilité de leurs packages, et donc des objets ont été introduit pour aider à représenter
+  ça dans les dépendances au packages locaux. Par exemple `DepsAdjuster('< Ubuntu 18.04', add=['libxfont-dev']),` permet d'ajouter
+  en dépendance le paquetage `libxfont-dev` quand on build pour sur une Ubuntu avant la `18.04`.
+* on dispose d'une page de manuel listant tout ce qui est disponible à l'intérieur des scripts _accendino_
+* cette version est publié sur pypy
+
+# Les nouveautés dans la version 0.5.9
+
+## Cross compilation
+
+Cette version commence à introduire la compilation croisée, celà prend en compte l'architecture ainsi que
+la plateforme. Ainsi la compilation pour windows à partir de Linux a été pas mal testée en utilisant mingw.
+Certaines plateformes comme Fedora fournissent des binaires déjà compilés de librairies usuelles pour mingw, ainsi sur une Fedora 41 on
+dispose déjà de zlib, d'uriparser, etc. Celà permet de faire des fichiers accendino assez complexes où par exemple pour
+fournir zlib on peut:
+
+* si on compile en natif utiliser des packages disponibles comme `zlib1-dev` ou `zlib-ng-devel`;
+* si on compile en compilation croisée pour Windows avec mingw et qu'on est sur Fedora, utiliser les paquetages ad-hoc comme `mingw64-zlib`.
+  Même Ubuntu fournit zlib pour mingw;
+* et enfin si on n'est dans aucun de ces cas là, on compile zlib à partir des sources
+
+Le fichier `zlib.accendino` correspondant est assez élégant je trouve:
+```python
+zlib_pkgDeps = {
+    UBUNTU_LIKE: ['zlib1g-dev'],
+    REDHAT_LIKE: ['zlib-ng-devel'],
+}
+
+zlib_fromSources = False
+
+if targetDistribId == 'mingw':
+    # Checks for some existing distribution packets
+    if checkDistrib('>= Fedora 40') or (checkDistrib('>= Ubuntu 22.04') and targetArch == 'x86_64'):
+        zlib_pkgDeps.update({
+            'Fedora->mingw@i686': ['mingw32-zlib'],
+            'Fedora->mingw@x86_64': ['mingw64-zlib'],
+            'Ubuntu->mingw@x86_64': ['libz-mingw-w64-dev'],
+        })
+    else:
+        zlib_fromSources = True
+
+if targetDistribId == 'Windows':
+    zlib_fromSources = True
+
+if zlib_fromSources:
+    ARTIFACTS += [
+        CMakeBuildArtifact('zlib', [], GitSource('https://github.com/madler/zlib.git', 'v1.3.1'),
+            cmakeOpts=['-DZLIB_BUILD_EXAMPLES=OFF'], provides=['zlib-artifact']
+        ),
+        CMakeBuildArtifact('zlib-static', [], GitSource('https://github.com/madler/zlib.git', 'v1.3.1'),
+            cmakeOpts=['-DZLIB_BUILD_EXAMPLES=OFF', '-DBUILD_SHARED_LIBS=OFF']
+        ),
+    ]
+
+else:
+    ARTIFACTS += [
+        DepsBuildArtifact('zlib-artifact', [], pkgs=zlib_pkgDeps)
+    ]
+```
+Un artefact nécessitant zlib pour se construire n'aura qu'à mettre `zlib-artifact` dans ses dépendances et _accendino_
+fera le reste.
+
+Comme on peut le voir dans cet exemple, le format pour exprimer un environnement cross compilation est `<build distrib>-><target distrib>@<arch>`, par
+exemple `Fedora->mingw@x86_64` signifie "quand on build sous Fedora pour mingw64".
+
+_Accendino_ essaye de fournir ce qu'il faut à `cmake` ou `meson` pour que la compilation croisée fonctionne correctement sans 
+faire la moindre configuration.
+
+
+
+Par exemple pour avoir freerdp et ses dépendances pour windows construit avec mingw, on lance dans les sources d'accendino:
+```console
+# accendino --targets=freerdp3 --targetDistrib=mingw64 --prefix=/tmp/freerdp3-win32 --project=freerdp3-build src/accendino/pocket/freerdp.accendino
+```
+
+Et dans `/tmp/freerdp3-win32` on aura tout ce qu'il faut. On aura un répertoire `freerdp3-build` qui contiendra les sources et les compilés.
+
+## Artefacts de build
+
+Les artefacts de build ont été modifié pour utiliser des commandes de build et d'install qui marchent sur toutes les plateformes 
+(`cmake --build` ou `meson compile`), de cette manière on peut laisser ces outils générer pour le backend le plus adapté à une
+plateforme, et construire et installer sans se soucier de quel outil est vraiment utilisé derrière (msbuild pour windows et ninja ou cmake
+sur les unix).
+
+Désormais les artefacts de build et les sources de code amènent aussi leurs dépendances en terme de packages: un artefact construit avec `cmake` dont
+le code vient de `git` demandera à installer les packages `git` et `cmake`. On essaye aussi de faire au mieux quand on compile pour mingw.
+
+La classe `BuildArtifact` a été beaucoup retravaillée pour bien avoir l'étape de préparation du code source et du répertoire de build.
+Et la phase de compilation/installation. La phase de préparation est quelques fois assez longue avec des sources utilisant les `autotools`
+ou des outils maison (oui on parle de vous `openssl` et `ffmpeg`), _accendino_ essaye donc de faire un cache de cette étape en référençant les variables
+qui servent à cette étape, et si rien n'a changé on ne la relance pas.
+
+Comme _Accendino_ lance des commandes avec tout un environnement qu'il établi lui même à partir de la configuration, quand on veut
+débugger un build qui ne fonctionne pas, c'est compliqué d'être exactement dans la même configuration. Pour aider au débuggage, quand
+on lance _accendino_ avec l'option `--debug`, il créé des fichiers `setEnv.sh` et `prepare.sh` qui permettent de facilement avoir le
+même environnement et les mêmes commandes.
+
+## Chemin de style Unix ou windows
+
+Quand un même outil est disponible à la fois sous les unix et sous windows, on se retrouve assez fréquement à
+se demander comment exprimer des chemins de fichiers: faut-il utiliser des `/` ou bien des `\` ? Certains outils gèrent
+les deux et pour d'autres on doit donner un chemin dans le mode de l'Os. C'est pour celà qu'accendino a désormais
+une class `NativePath` qui permet de s'adapter à cette contraite et de proposer un chemin avec le saparateur qui
+va bien pour un OS donné. Ainsi `NativePath('{srcdir}', 'toto', 'bin', prefix='--mypath=', suffix='-after')` génèrera
+la chaîne  `--mypath={srcdir}/toto/bin-after` sous les unix et `--mypath={srcdir}\toto\bin-after` sous windows. Avec
+`srcdir` qui sera substitué par son équivalent natif (on peut aussi utiliser `{srcdir_posix}` si on veut forcer la 
+représentation posix avec des `/`).
+
+Petit exemple d'utilisation tiré du fichier `openssl.accendino`:
+```python
+prepareCmd = ['perl', NativePath('{srcdir}', 'Configure')]
+```
+
+
+# Conclusion
+
+Bref, cette nouvelle version d'_accendino_ est vraiment une étape importante, essayez la !
+

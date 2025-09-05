@@ -1,0 +1,133 @@
+<img class="alignright" src="/images/accendino.png" width="100px">
+
+I made some updates to my _Accendino_ script, until it became a program of its own with
+interesting features. This version 0.5.9 adds a lot of nice things compared to the
+previous version. Over time, I see _Accendino_ more as a program allowing to build a complex software from
+several software sources, and on several platforms. For now my case study is FreeRDP, I try to have
+accendino files that allow to build FreeRDP from scratch on as many platforms as possible (linux, mac,
+windows, mingw, ...)
+
+<br style='clear: both;'>
+
+# History
+
+Originally _accendino_ was just a small script to run the _Ogon_ installation instructions. It was
+a bit more complex because you could specify the git locations to download. For example, to use the _Forgiare_
+repositories instead of the official _Ogon_ repositories. With version 0.5.0, I extended its features quite a lot:
+
+* the ability to include accendino files to reuse existing definitions;
+* the program sources have been greatly extended and no longer necessarily come from git. We can have local sources,
+  or from git. Many git options are now accessible;<!-- TEASER_END -->
+* in an _accendino_ file we now have access to a bunch of functions and variables, which allows to create more complex build scripts;
+* the management of the build plan has been modified, which allows to have a functionality of resuming the build from a certain point;
+* it happens that distributions change the name or the availability of their packages, and therefore objects have been introduced to help represent
+this in the dependencies to local packages. For example `DepsAdjuster('< Ubuntu 18.04', add=['libxfont-dev']),` allows to add
+the `libxfont-dev` package as a dependency when building for an Ubuntu before `18.04`.
+* we have a manual page listing everything that is available inside the _accendino_ scripts
+* it's also the first version published on `pypy`
+
+# What's new in version 0.5.9
+
+## Cross compilation
+
+This version begins to introduce cross compilation, this takes into account the architecture as well as
+the platform. So the compilation for windows from Linux has been tested quite a lot using mingw.
+Some platforms like Fedora provide already compiled binaries for common libraries built for mingw, so on a Fedora 41 we
+already have zlib, uriparser, etc. This allows to make quite complex accendino files where for example to
+provide zlib we can:
+
+* if we compile natively use available packages like `zlib1-dev` or `zlib-ng-devel`;
+* if you cross-compile for Windows with mingw and you are on Fedora, use ad-hoc packages like `mingw64-zlib`. Even Ubuntu provides zlib for mingw;
+* and finally if we are in none of these cases, we compile zlib from sources
+
+I find the corresponding `zlib.accendino` file quite elegant:
+```python
+zlib_pkgDeps = {
+    UBUNTU_LIKE: ['zlib1g-dev'],
+    REDHAT_LIKE: ['zlib-ng-devel'],
+}
+
+zlib_fromSources = False
+
+if targetDistribId == 'mingw':
+    # Checks for some existing distribution packets
+    if checkDistrib('>= Fedora 40') or (checkDistrib('>= Ubuntu 22.04') and targetArch == 'x86_64'):
+        zlib_pkgDeps.update({
+            'Fedora->mingw@i686': ['mingw32-zlib'],
+            'Fedora->mingw@x86_64': ['mingw64-zlib'],
+            'Ubuntu->mingw@x86_64': ['libz-mingw-w64-dev'],
+        })
+    else:
+        zlib_fromSources = True
+
+if targetDistribId == 'Windows':
+    zlib_fromSources = True
+
+if zlib_fromSources:
+    ARTIFACTS += [
+        CMakeBuildArtifact('zlib', [], GitSource('https://github.com/madler/zlib.git', 'v1.3.1'),
+            cmakeOpts=['-DZLIB_BUILD_EXAMPLES=OFF'], provides=['zlib-artifact']
+        ),
+        CMakeBuildArtifact('zlib-static', [], GitSource('https://github.com/madler/zlib.git', 'v1.3.1'),
+            cmakeOpts=['-DZLIB_BUILD_EXAMPLES=OFF', '-DBUILD_SHARED_LIBS=OFF']
+        ),
+    ]
+
+else:
+    ARTIFACTS += [
+        DepsBuildArtifact('zlib-artifact', [], pkgs=zlib_pkgDeps)
+    ]
+```
+An artifact that requires zlib will just have to add `zlib-artifact` in its dependencies and _accendino_
+will do the rest.
+
+As you can see in this example, the format to express a cross compilation environment is `<build distrib>-><target distrib>@<arch>`, for
+example `Fedora->mingw@x86_64` means "when building under Fedora for mingw64".
+
+_Accendino_ tries to provide what is needed for `cmake` or `meson` to make cross compilation work properly without doing any configuration.
+
+
+For example, to have freerdp and its dependencies for windows built with mingw, you can run in the accendino sources:
+```console
+# accendino --targets=freerdp3 --targetDistrib=mingw64 --prefix=/tmp/freerdp3-win32 --project=freerdp3-build src/accendino/pocket/freerdp.accendino
+```
+
+And in `/tmp/freerdp3-win32` we will have everything we need. We will have a directory `freerdp3-build` which will contain the sources and built tree.
+
+## Build artifacts
+
+Build artifacts have been modified to use build and install commands that work on all platforms
+(`cmake --build` or `meson compile`), this way we can let these tools use the best backend for a
+platform, and build and install without worrying about which tool is really used behind (msbuild for windows and ninja or cmake
+on unix).
+
+Now build artifacts and code sources also bring their dependencies in terms of packages: an artifact built with `cmake` whose
+code comes from `git` will ask to install the `git` and `cmake` packages. We also try to do our best when compiling for mingw.
+
+The `BuildArtifact` class has been reworked a lot to have the step of preparing the source code and the build directory,
+and the compilation/installation phase. The preparation phase is sometimes quite long with sources using `autotools`
+or home-made tools (yes we are talking about you `openssl` and `ffmpeg`), _accendino_ therefore tries to make a cache of this step by referencing the variables
+that are used for this step, and if nothing has changed we do not re-run it.
+
+As _Accendino_ launches commands with a whole environment that it establishes itself from the configuration, when we want
+to debug a build that fails, it is complicated to be exactly with the same configuration. To help with debugging, when
+we launch _accendino_ with the `--debug` option, it creates `setEnv.sh` and `prepare.sh` files that allow us to easily have the
+same environment and the same commands.
+
+## Unix or windows style path
+
+When the same tool is available on both Unix and Windows, we often wonder how to express file paths: should we use `/` or `\`? Some tools manage 
+both and for others we must give a path in the right OS fashion. This is why Accendino now has a `NativePath` class that can adapt to this constraint 
+and propose a path with the appropriate separator for a given OS. So `NativePath('{srcdir}', 'toto', 'bin', prefix='--mypath=', suffix='-after')` generates 
+the string `--mypath={srcdir}/toto/bin-after` on Unix and `--mypath={srcdir}\toto\bin-after` on Windows. With
+`srcdir` which will be substituted by its native equivalent (you can also use `{srcdir_posix}` if you want to force the
+posix representation with `/`).
+
+Sample usage taken from the `openssl.accendino` file (you configure openssl running the `Configure` perl script):
+```python
+prepareCmd = ['perl', NativePath('{srcdir}', 'Configure')]
+```
+
+# Conclusion
+
+This new version of _accendino_ is really nice, try it!

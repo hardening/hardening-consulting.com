@@ -41,6 +41,16 @@ Je suis un contributeur régulier de FreeRDP, j'ai notament contribué:
 Je fais partie de l'équipe qui a créé ogon. Tant sur la partie serveur elle-même
 que sur les services périphériques. 
 
+<img class="alignright" src="/images/accendino.png" width="100px">
+# Accendino
+
+Le but de ce programme est de fournir un outil pour construire des projets complexes
+à partir de multiples sources et sur plusieurs plate-formes. Le but est de faciliter
+cette tâche qu'on rencontre sur de multiples projets. La construction du projet se fait
+en python, ce qui permet d'avoir toute la flexibilité du langage pour exprimer un build complexe.
+Aujourd'hui Accendino est capable de construire FreeRDP et ses dépendences sur la majorité
+des plateformes, on peut même faire de la cross compilation.
+<br style='clear:both'/>
 
 <img class='alignright' src='/images/qt5.jpg' height='100px'>
 # Autour de Qt
@@ -62,8 +72,7 @@ avec tous les outils Qt5 intégrés, et de la rendre disponible via Ogon.
 
 Le greeter (application qui demande un login / mot de passe) d'ogon de cette vidéo utilise ce projet:
 
-https://www.youtube.com/watch?v=hGErMsA8kG4
-
+{{% media url="https://youtu.be/SgxOwBZ_nE8" %}}
 
 Dans ce projet, on dispose aussi de widgets Qt pour interagir avec Ogon. On a par exemple
 un widget de changement de résolution utilisable directement dans QtDesigner. Ce widget

@@ -37,13 +37,21 @@ I'm a contributor on the FreeRDP project, I have:
 I'm part of the guys that did Ogon. I have been working on the server itself as well
 on external channels. 
 
+<img class="alignright" src="/images/accendino.png" width="100px">
+# Accendino
+
+This project aims to build complex projects from sources on multiple platforms and
+make it easy and convenient for you. The script that express build commands are
+written in python with lots of helpers. Right now it allow to build FreeRDP on many
+platforms, pulling all the necessary items for a given OS. It even can do cross compilation.
+<br style='clear:both'/>
 
 <img class='alignright' src='/images/qt5.jpg' height='100px'>
 # Projects involving Qt
 
 ## Qfreerdp
 It's a Qt platform plugin that allows to export application through RDP. With this
-plugin, you can take any Qt5 application and export it through RDP without any recompilation
+plugin, you can take any Qt5 or Qt6 application and export it through RDP without any recompilation
 (there a limitation with apps using OpenGl).
 
 This project is hosted on [github][qfreerdp]. It is published under the Apache 2.0 license and

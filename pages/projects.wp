@@ -46,8 +46,8 @@ que sur les services périphériques.
 
 Le but de ce programme est de fournir un outil pour construire des projets complexes
 à partir de multiples sources et sur plusieurs plate-formes. Le but est de faciliter
-cette tâche qu'on rencontre sur de multiples projets. La construction du projet se fait
-en python, ce qui permet d'avoir toute la flexibilité du langage pour exprimer un build complexe.
+cette tâche qu'on rencontre sur de multiples projets. La description de la construction du projet 
+se fait dans des fichiers en python, ce qui permet d'avoir toute la flexibilité du langage pour exprimer un build complexe.
 Aujourd'hui Accendino est capable de construire FreeRDP et ses dépendences sur la majorité
 des plateformes, on peut même faire de la cross compilation.
 <br style='clear:both'/>

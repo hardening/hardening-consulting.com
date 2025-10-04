@@ -1,0 +1,118 @@
+<img class="alignright" src="/images/accendino.png" width="100px">
+
+Encore beaucoup d'améliorations sur _Accendino_, et on a cette version 0.5.10 qui est en
+cours de stabilisation avec cette alpha 1. 
+
+FFmpeg fait partie de ces logiciels qui sont horribles à 
+construire de manière automatique sous windows (juste derrière OpenSSL), et un des buts recherchés 
+pour cette version c'était de pouvoir construire FreeRDP avec le support d'FFmpeg sous windows avec la chaine de compilation de Visual Studio
+et tout ça de manière automatique. 
+Pas de bidouilles à faire à la main pour que ça fonctionne, on tape 
+```console
+$ accendino --targets=freerdp3 freerdp.accendino
+```
+ça checkout, ça compile et c'est prêt.
+
+ 
+<br style='clear: both;'>
+
+# Les nouveautés dans la version 0.5.10 alpha 1
+
+## Support d'Msys2
+
+<img class="alignright" src="/images/msys2.png" width="100px">
+
+Première étape pour compiler FFmpeg avec Visual Studio: il y a besoin de passer des commandes sous `msys2`, et donc cette
+version amène le support d'installation des packages dans cet environnement. Si on met en dépendance
+de packages `'msys2/yasm'`, _accendino_ installera les packages correspondants dans l'environnement `msys2`. 
+
+Petit extrait du fichier accendino de FFmpeg:
+
+```python
+...
+
+ffmpegPkgs = {
+    'Darwin': ['nasm'],
+    'Windows': ['choco/nasm|path/nasm', 'msys2/make', 'msys2/yasm', 'msys2/diffutils'],
+}
+
+...
+```
+
+Ce support n'a pas été très compliqué à coder car c'est `pacman` qui est utilisé <!-- TEASER_END --> comme package manager
+dans `msys2` et il était déjà supporté pour ArchLinux par _accendino_. On disposait donc déjà de tout ce qu'il fallait pour lister
+les packages installés et lancer des installations de packages.
+
+Il a aussi été rajouté le builder `makeMsys2` dans le `CustomCommandBuildArtifact`, ce qui permet de lancer
+make mais dans l'environnement `msys2`, indispensable pour construire FFmpeg.
+
+<br style='clear: both;'>
+ 
+## Toolchain
+
+<img class="alignright" src="/images/specifications2.png" width="100px">
+
+Cette version apporte la notion de toolchain, qui permet en gros de specifier quelle chaîne de compilation 
+utiliser. Sous les Unixes, on a le choix entre `gcc` et `clang`, et sous windows on va détecter Visual Studio
+et ces moutures avec msvc ou clang (`vs/msvc` ou `vs/clang`).
+
+Le support de la toolchain permet de positionner les variables d'environnements qui vont bien
+pour gcc ou clang (qui seront ensuite utilisées par `meson`, `cmake` ou consorts), mais aussi d'appeler le script 
+de visual studio `VsDevCmd.bat` (ou son équivalent powershell).
+
+Tout ceci était indispensable pour FFmpeg, car quand on le construit à la main, on ouvre un shell de développement de
+Visual Studio qui permet d'avoir le PATH positionné comme il faut, puis on lance un shell msys2 qui va hériter 
+de ces valeurs, et on lance le build à l'intérieur de ce shell `msys2`.
+
+Le processus de construction sous windows a donc aussi été remanié et désormais on génére un script
+powershell avec toutes les commandes et c'est ce script qui est ensuite exécuté. Ceci facilite la gestion
+des variables d'environnement, mais aussi le débuggage, car on peut facilement relancer le script avec
+exactement le même environnement (car tout ça est fait dans le script powershell lui même).
+
+Avec tous ces ajouts, on automatise la construction de FFmpeg sous windows avec Visual Studio. Même si
+on avait déjà la possibilité de faire une cross compilation avec mingw sous Linux et ensuite transférer les
+fichiers sous windows, celà permet de se servir directement de VisualStudio si on doit faire une session de débuggage.
+
+Avec le support des toolchains, les `BuildArtifact` ont un nouvel argument `toolchainArtifacts` qui donne la liste
+des entités qu'on utilise de la toolchain. La valeur par défaut est `c` pour indiquer qu'on veut utiliser un compilateur C, 
+mais on peut aussi ajouter `c++` pour les projets codés dans ce language. 
+
+<br style='clear: both;'>
+
+## Autres changements pêle-mêle
+<img class="alignright" src="/images/new.png" width="100px">
+
+Pas mal d'autres améliorations ont été apportées dans cette version:
+  
+* des fichiers _accendino_ ont été rajoutés pour `Cairo`, `cJson` et `qfreerdp_platform`, ce qui permet de construire ces projets
+très facilement et d'avoir un FreeRDP plus complet sous windows;
+* désormais quand _accendino_ détecte un rebuild dans un package, il rebuildera aussi tous les packages dont dépendent ce package;
+* avec cette version on cherche les fichiers _accendino_ passés en ligne de commande dans le chemin courant puis dans les pockets, plus besoin
+de donner le chemin complet quand le fichier _accendino_ est stocké dans une pocket;
+* la commande `include` a un nouveau paramètre `include_once` (vrai par défaut) qui permet de spécifier qu'un fichier ne doit être inclu qu'une fois durant
+l'exécution d'_accendino_;
+* des tests de CI ont été peaufinés permettant de valider que tout fonctionne correctement après des changements, ceci permet
+de valider un certain nombre de cas build avec _accendino_ sous linux et sous windows  
+
+# Conclusion
+
+Avec ces nouveautés on peut facilement avoir le dernier FreeRDP sous windows avec tout ce qu'il est possible d'avoir de fonctionnalités avec un simple:
+
+```console
+C:\Users\david> accendino --targets=freerdp3 freerdp.accendino
+```
+
+VisualStudio sera détecté, les éventuels packages installés, etc.
+
+Et sous Linux un petit:
+```console
+$ accendino --targets=qfreerdp_platform-qt6 --toolchain=clang qfreerdp_platform.accendino
+```
+et on a `qfreerdp_platform` compilé pour `Qt6` sous `clang`. Il n'y a vraiment plus d'excuses pour ne pas tester ces petits projets !
+
+Voilà c'est grosso-modo le fonctionnel qui sera dans cette version 0.5.10, les retours ou rapports de bugs sont les bienvenus.
+
+
+
+
+

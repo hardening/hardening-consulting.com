@@ -26,7 +26,7 @@ SITE_URL = "https://www.hardening-consulting.com/"
 # If not set, defaults to SITE_URL
 # BASE_URL = "http://getnikola.com/"
 BLOG_EMAIL = "contact@hardening-consulting.com"
-BLOG_DESCRIPTION = "Bits from the cyberspace"   # (translatable)
+BLOG_DESCRIPTION = {"en": "Bits from the cyberspace", "fr": "Du contenu venu du cyber-espace"}   # (translatable)
 BLOG_GITHUB = "hardening"
 BLOG_LINKEDIN = "fort-david/0/2b0/2a9"
 BLOG_GOOGLEPLUS = "+FORTDavid"

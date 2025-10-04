@@ -41,7 +41,7 @@ on external channels.
 # Accendino
 
 This project aims to build complex projects from sources on multiple platforms and
-make it easy and convenient for you. The script that express build commands are
+make it easy and convenient for you. The scripts that express build commands are
 written in python with lots of helpers. Right now it allow to build FreeRDP on many
 platforms, pulling all the necessary items for a given OS. It even can do cross compilation.
 <br style='clear:both'/>

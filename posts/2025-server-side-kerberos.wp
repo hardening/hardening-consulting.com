@@ -1,0 +1,109 @@
+<img class="alignright" src="/images/rdplogo.jpeg" width="100px">
+Ces derniers temps, j'ai pas mal exploré  des sujets de FreeRDP avec remote credential guard, Kerberos et NLA, je fais donc
+un petit billet sur comment kerberossiser sa partie serveur de FreeRDP. 
+ 
+<br style='clear: both;'>
+
+# NLA, SPNego et Kerberos
+<img class="alignright" src="/images/kerberos.png" width="150px">
+
+Toute la kerberosserie commence avec le _NLA_: si on se connecte sur un serveur _RDP_
+avec _mstsc_ et que la configuration est à peu près standard. <!-- TEASER_END -->
+Quand on exécute `mstsc /v:dc.hardening2.com`, _mstsc_ va:
+
+* se connecter au serveur et négocier du _NLA_;
+* établir la couche TLS;
+* commencer _NLA_ en envoyant dedans un paquet _SPNego_, et ce paquet _SPNego_ contiendra un début
+  de négociation _Kerberos_ en mode user2user dans le champs du optimistic token. En gros, _mstsc_ (via CredSSP)
+  considère qu'évidement on supporte tout ce qui va bien et qu'en plus de donner la liste
+  ordonnée des modes d'authentification qu'on supporte, on peut gagner un aller-retour en donnant directement un
+  token pour celui qu'on préfère, car à coup sûr c'est celui-là que le serveur va utiliser;
+* donc dans le cas standard, ce premier token va être une demande de _tgt_ dans le cadre d'un négociation en mode
+  user2user. Ceci suppose que le serveur ai d'une manière ou d'une autre un "compte machine" qui lui permette
+  de récupérer un TGT. Le serveur acquière le TGT et le renvoie au client;
+* dans l'étape suivante, le client envoie un Service Ticket (souvent appelé TGS) pour validation au serveur,
+  ce ticket est pour `TERMSRV/<nom serveur>@<REALM>`. On est en user2user, le serveur valide donc ce ticket
+  "à travers" le client.
+
+Notes: dans certain cas, on peut se passer de la couche
+SPNego et envoyer directement le message qui va bien. C'est ce que fait tout le temps le vénérable _rdesktop_,
+mais aussi _FreeRDP_ quand on ne peut faire que du NTLM ou un type de kerberos (à ce moment là pas besoin de
+rajouter la couche de négociation de _SPNego_)
+
+# Configuration
+
+Très bien pour la théorie, mais en pratique ? Alors évidement on peut passer des commandes sous windows
+et jouer avec les clicodrômes du serveur sous windows, mais ce n'est pas ce qui nous plait non ?
+
+On va donc plutôt utiliser _msktutil_ sous Linux pour créer le keytab qui va bien. On commence par
+se logguer en kerberos avec un compte avec les bons privilèges, par exemple, dans mon cas:
+
+```console
+$ kinit Administrateur@HARDENING2.COM
+Password for Administrateur@HARDENING2.COM:
+$ klist
+Ticket cache: FILE:/tmp/krb5cc_1000
+Default principal: Administrateur@HARDENING2.COM
+
+Valid starting       Expires              Service principal
+08/12/2025 14:11:09  09/12/2025 00:11:09  krbtgt/HARDENING2.COM@HARDENING2.COM
+        renew until 09/12/2025 14:10:49
+
+```
+
+Ensuite on va créer le host _djinn65_, lui attacher le service _TERMSRV_, et récupérer le keytab correspondant. Dans mon exemple, 
+le controlleur de domaine s'appelle _dc.hardening2.com_:
+
+```console
+$ msktutil --server dc.hardening2.com --precreate --host djinn65 -b cn=computers --service TERMSRV --description "host account for djinn65" --enctypes 24 -N
+$ msktutil --server dc.hardening2.com --auto-update --keytab djinn65-termsrv.keytab --host djinn65 -N
+$ klist -kt djinn65-termsrv.keytab
+Keytab name: FILE:djinn65-termsrv.keytab
+KVNO Timestamp           Principal
+---- ------------------- ------------------------------------------------------
+  15 05/12/2025 22:51:04 djinn65$@HARDENING2.COM
+  15 05/12/2025 22:51:04 djinn65$@HARDENING2.COM
+  15 05/12/2025 22:51:04 djinn65$@HARDENING2.COM
+  15 05/12/2025 22:51:04 DJINN65$@HARDENING2.COM
+  15 05/12/2025 22:51:04 DJINN65$@HARDENING2.COM
+  15 05/12/2025 22:51:04 DJINN65$@HARDENING2.COM
+  15 05/12/2025 22:51:04 TERMSRV/djinn65@HARDENING2.COM
+  15 05/12/2025 22:51:05 TERMSRV/djinn65@HARDENING2.COM
+  15 05/12/2025 22:51:05 TERMSRV/djinn65@HARDENING2.COM
+  15 05/12/2025 22:51:05 host/djinn65@HARDENING2.COM
+  15 05/12/2025 22:51:05 host/djinn65@HARDENING2.COM
+  15 05/12/2025 22:51:05 host/djinn65@HARDENING2.COM
+```
+
+On notera l'entrée associée à la machine avec le dollar à la fin (_DJINN65$@HARDENING2.COM_). 
+
+Il y a plusieurs manières d'avoir un SPN, soit on créé un "compte de service" et on lui associe le SPN, c'est donc les droits du compte de service qui sont appliqués.
+
+Soit comme dans mon exemple, c'est le compte de la machine qui porte le SPN plutôt qu'un compte additionnel.
+
+On peut voir ça en utilisant l'outils _Utilisateurs et ordinateurs activeDirectory_, en allant sur l'entrée correspondant à la machine, puis l'onglet
+_Éditeur d'attributs_, là on trouve une entrée _servicePrincipalName_:
+
+<img src='/images/kerberos/attributes editor.png'>
+
+<br style='clear: both;'>
+
+Dans le cas d'un compte de service, on aura la même chose mais sur l'entrée du compte de service plutôt que sur celle du host.
+
+La différence entre les deux modes, c'est que quand le SPN est associé à l'host, le serveur va se "logguer" (récupérer un TGT) avec le SPN `djinn65$@HARDENING2.COM`. 
+On peut simuler ça en faisant:
+
+```console
+$ kinit -kt djinn65-termsrv.keytab 'djinn65$@HARDENING2.COM'
+```
+
+Si on utilisait plutôt un compte de service, ce serait plutôt (_msktutil_ permet aussi de gérer les comptes de service):
+
+```console
+$ kinit -kt djinn65-termsrv.keytab TERMSRV/djinn65@HARDENING2.COM
+```
+
+
+# Conclusion
+
+Après tout ça la kerberossisation n'a plus de secrets pour vous, à vous les proxys ou les shadow servers en NLA+Kerberos !
